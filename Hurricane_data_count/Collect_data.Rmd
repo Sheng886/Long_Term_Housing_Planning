@@ -1,0 +1,104 @@
+---
+title: "Regression"
+output: html_document
+date: "2022-09-22"
+---
+
+## Package
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(zoo)
+library(dplyr)
+library(ggplot2) 
+```
+
+# Problem: Capture Housing demand resulting from annual hurricane activity.
+
+# --\> Capture annual hurricane activity
+
+# --\> spatial data?
+
+The next steps in this project are centered on tackling long-term disaster housing planning under demand uncertainty. It comprises two main parts. We, first, provide a forecast model to capture housing demand resulting from annual hurricane activity. Subsequently, the forecasts will be fed into an optimization mode to proactively adapts inventory levels and strategically prepositions housing units in response to the evolving patterns of hurricane activity throughout a year.
+
+# Spatial Data?
+
+<https://www.nhc.noaa.gov/climo/#>:\~:text=Based%20on%20a%2030%2Dyear,%2DSimpson%20Hurricane%20Wind%20Scale).
+
+# Idea:
+
+1)  separate of region → hypothesis test on the same distribution
+2)  Number of hurricane distribution X intensity of hurricane
+
+# Hurricane track load
+
+```{r change HURDAT2 data txt to csv (hurricane)}
+csv = read.csv("Hurricane_track/hurdat2021.txt", header=F, as.is=T)
+
+names(csv) = c("DATE", "TIME_UTC", "POINT_TYPE", "STATUS", 
+	"LATITUDE", "LONGITUDE", "WINDSPEED_KT", "PRESURE_MB", 
+	"NE_34_KT", "SE_34_KT", "NW_34_KT", "SW_34_KT",
+	"NE_50_KT", "SE_50_KT", "NW_50_KT", "SW_50_KT",
+	"NE_64_KT", "SE_64_KT", "NW_64_KT", "SW_64_KT","max_KT")
+
+panel = cbind(HID = NA, HNAME = NA, csv)
+
+panel$HID = ifelse(grepl("AL|EP|CP", panel$DATE), panel$DATE, NA)
+panel$HNAME = ifelse(grepl("AL|EP|CP", panel$DATE), panel$TIME_UTC, NA)
+panel$HID = na.locf(panel$HID)
+panel$HNAME = na.locf(panel$HNAME)
+panel = panel[!grepl("AL|EP|CP", panel$DATE), ]
+
+panel$LATITUDE = trimws(panel$LATITUDE)
+panel$LONGITUDE = trimws(panel$LONGITUDE)
+panel$LATITUDE = ifelse(grepl("S", panel$LATITUDE), paste0("-", panel$LATITUDE), panel$LATITUDE)
+panel$LONGITUDE = ifelse(grepl("W", panel$LONGITUDE), paste0("-", panel$LONGITUDE), panel$LONGITUDE)
+panel$LATITUDE = as.numeric(sub("N|S", "", panel$LATITUDE))
+panel$LONGITUDE = as.numeric(sub("E|W", "", panel$LONGITUDE))
+panel$STATUS = trimws(panel$STATUS)
+panel$DECADE = paste0(substr(panel$DATE, 1, 3), "0")
+
+panel = subset(panel,select = -c(POINT_TYPE))
+panel$HNAME<-gsub(" ","",as.character(panel$HNAME))
+panel = panel[panel$HNAME != "UNNAMED",]
+panel$TIME_UTC=sub(" ","",as.character(panel$TIME_UTC))
+
+write.csv(panel, "Hurricane_track/hurdat2021.csv", row.names=F)
+```
+
+Due to the fact that hurricanes impacting the continental United States predominantly originate from the Gulf of Mexico and the Atlantic Ocean\~\cite{NOAA}, we can employ these specific geographical zones to delineate two regions in the southeastern United States.
+
+```{r}
+panel1 = panel[panel$WINDSPEED_KT > 110 & panel$LONGITUDE < -80,]
+panel2 = panel[panel$WINDSPEED_KT > 110 & panel$LONGITUDE >= -80 & panel$LONGITUDE <= -70,]
+
+Hurricane_data_Gulf = data.frame(Name = panel1$HNAME,Year = as.integer(substr(panel1$DATE,1,4)))
+Hurricane_data_Atlantic = data.frame(Name = panel2$HNAME,Year = as.integer(substr(panel2$DATE,1,4)))
+
+
+time = c()
+count_hurricane_Gulf = c()
+count_hurricane_Atlantic = c()
+for (i in (1980:2021))
+{
+  time = c(time,i)
+  count_Gulf = nrow(Hurricane_data_Gulf[Hurricane_data_Gulf$Year == i,] %>% group_by(Year) %>% count(Name))
+  count_Atlantic = nrow(Hurricane_data_Atlantic[Hurricane_data_Atlantic$Year == i,] %>% group_by(Year) %>% count(Name))
+  count_hurricane_Gulf = c(count_hurricane_Gulf,count_Gulf)
+  count_hurricane_Atlantic = c(count_hurricane_Atlantic,count_Atlantic)
+}
+
+
+Hurricane_data_time_Gulf = data.frame(time,count_hurricane_Gulf)
+Hurricane_data_time_Atlantic = data.frame(time,count_hurricane_Atlantic)
+Hurricane_TS_Gulf = read.zoo(Hurricane_data_time_Gulf[c("time","count_hurricane_Gulf")])
+Hurricane_TS_Atlantic = read.zoo(Hurricane_data_time_Atlantic[c("time","count_hurricane_Atlantic")])
+plot(Hurricane_TS_Gulf, col = "blue",ylab="Count",xlab="Year")
+lines(Hurricane_TS_Atlantic, lty=2, col = "red")
+legend("topleft", legend=c("Gulf", "Atlantic"), col=c("red", "blue"), lty=1:2, cex=0.8)
+```
+```{r}
+ccf_result <- ccf(Hurricane_TS_Gulf, Hurricane_TS_Atlantic, lag.max = 10)
+acf(Hurricane_TS_Gulf)
+acf(Hurricane_TS_Atlantic)
+```
