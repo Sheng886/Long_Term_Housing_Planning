@@ -6,13 +6,13 @@ class Arguments:
 
 
         # Number of Elements in the Set
-        self._parser.add_argument('--I', type=int, default=9, help='Number of Supplier')
-        self._parser.add_argument('--W', type=int, default=1, help='Number of Staging Area')
-        self._parser.add_argument('--J', type=int, default=67, help='Number of Study Region')
-        self._parser.add_argument('--K', type=int, default=5, help='Scenario')
-        self._parser.add_argument('--P', type=int, default=3, help='Housing Type')
-        self._parser.add_argument('--G', type=int, default=2, help='Victims Group')
-        self._parser.add_argument('--T', type=int, default=45, help='Time')
+        self._parser.add_argument('--I', type=int, default=7, help='Number of Supplier')
+        self._parser.add_argument('--W', type=int, default=2, help='Number of Staging Area')
+        self._parser.add_argument('--J', type=int, default=8, help='Number of Study Region')
+        self._parser.add_argument('--K', type=int, default=10, help='Scenario')
+        self._parser.add_argument('--P', type=int, default=9, help='Housing Type')
+        self._parser.add_argument('--G', type=int, default=6, help='Victims Group')
+        self._parser.add_argument('--T', type=int, default=6, help='Victims Group')
 
         # Path
         self._parser.add_argument('--Deprivation_Penalty_path', type=str, default='data/Deprivation_Penalty.xlsx', help='Deprivation Cost Penalty Parameter')
