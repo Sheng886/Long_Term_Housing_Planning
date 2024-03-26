@@ -20,9 +20,6 @@ class input_data_class:
         self.second_end_time_point = df["Second_End"][0]
 
 
-        # self.first_end_time_point = 1
-        # self.deprivation_time_point = 3
-        # self.second_end_time_point = 4
         ### ------------------ time-index preprocess ------------ ###
 
 
