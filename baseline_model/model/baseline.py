@@ -28,22 +28,19 @@ class baseline_class():
         # pdb.set_trace()
 
         # Objective
-        self.model.setObjective((1/(args.K))*quicksum((quicksum(self.idata.wj_dis[w][j]*self.f[w,j,p,g,t,k]*args.t_cost for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T))
+        self.model.setObjective((1/(args.K))*quicksum((quicksum((self.idata.wj_dis[w][j] + self.idata.I_p[p]*self.idata.O_p[p])*self.f[w,j,p,g,t,k]*args.t_cost for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T))
                                 +quicksum(self.idata.CU_g[g]*self.q[g,t,k] for g in range(args.G) for t in range(args.T))
-                                +quicksum(self.idata.CH_p[p]*self.v[w,p,t,k] for w in range(args.W) for p in range(args.P) for t in range(args.T))
+                                +quicksum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t,k] for w in range(args.W) for p in range(args.P) for t in range(args.T))
                                 +quicksum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p,k] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                 -quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A))) 
                                 for k in range(args.K)), GRB.MINIMIZE);
 
 
 
-        # no second-stage decision will be made before T^H
-        # for k in range(args.K):
-        #     for i in range(args.I):
-        #         for p in range(args.P):
-        #             for t in range(0,self.first_end_time_point):
-        #                 self.model.addConstr(self.vk[k,i,p,t] == 0)
-        #                 self.model.addConstr(self.nuk[k,i,p,t] == 0)
+        # Policy
+        # for w in range(args.W):
+        #     self.model.addConstr(quicksum(self.idata.u_p[p]*x[w,p] for p in range(args.P)) <= )
+
 
     def run(self,args,xx=None,evaluation=False,name="TSCC.csv"):
 

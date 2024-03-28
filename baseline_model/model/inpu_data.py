@@ -66,7 +66,7 @@ class input_data_class:
         self.CH_p = np.zeros((args.P))
         self.O_p = np.zeros((args.P))
         self.R_p = np.zeros((args.P))
-        self.E_p = np.zeros((args.P))
+        self.u_p = np.zeros((args.P))
 
         df_House_info = pd.read_excel("data/House_Info.xlsx")
 
@@ -75,8 +75,7 @@ class input_data_class:
             self.CH_p[p] = df_House_info.iloc[1][p+1]
             self.O_p[p] = df_House_info.iloc[2][p+1]
             self.R_p[p] = df_House_info.iloc[3][p+1]
-            self.E_p[p] = df_House_info.iloc[4][p+1]
-
+            self.u_p[p] = df_House_info.iloc[4][p+1]
 
 
         # ### ------------------ House_Attribute ------------------ ###
@@ -112,6 +111,15 @@ class input_data_class:
 
         for g in range(args.G):
             self.CU_g[g] = df_CU_g.iloc[0][g+1]
+
+
+        # ### ------------------Staging Area Capacity ------------------ ###
+        self.Cap_w = np.zeros((args.W))
+
+        df_Cap_w = pd.read_excel("data/Staging_Area_info.xlsx")
+
+        for w in range(args.W):
+            self.Cap_w[w]  = df_Cap_w["Capacity"][w]
 
 
         # pdb.set_trace()
