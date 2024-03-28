@@ -12,7 +12,11 @@ class Arguments:
         self._parser.add_argument('--K', type=int, default=10, help='Scenario')
         self._parser.add_argument('--P', type=int, default=9, help='Housing Type')
         self._parser.add_argument('--G', type=int, default=6, help='Victims Group')
-        self._parser.add_argument('--T', type=int, default=6, help='Victims Group')
+        self._parser.add_argument('--T', type=int, default=6, help='Hurricane Season Count Month')
+        self._parser.add_argument('--A', type=int, default=8, help='Number of Attribute')
+
+        # Parameter
+        self._parser.add_argument('--t_cost', type=int, default=10, help='Transportation cost')
 
         # Path
         self._parser.add_argument('--Deprivation_Penalty_path', type=str, default='data/Deprivation_Penalty.xlsx', help='Deprivation Cost Penalty Parameter')
