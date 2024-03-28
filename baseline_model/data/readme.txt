@@ -24,6 +24,7 @@ CU_g   : Unmet Penalty Cost
 
 [Transition Node Info]
 U_w    : Capacity of Transition Node w
+E_p    : Maximum Number of solution provide in a season (not stored item)
 
 ----------------------File---------------------------
 

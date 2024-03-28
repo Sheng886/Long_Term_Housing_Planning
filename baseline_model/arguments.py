@@ -17,20 +17,21 @@ class Arguments:
 
         # Parameter
         self._parser.add_argument('--t_cost', type=int, default=10, help='Transportation cost')
+        self._parser.add_argument('--g_value', type=int, default=2500, help='Mean of Group Value')
 
         # Path
-        self._parser.add_argument('--Deprivation_Penalty_path', type=str, default='data/Deprivation_Penalty.xlsx', help='Deprivation Cost Penalty Parameter')
-        self._parser.add_argument('--House_Info_path', type=str, default='data/House_Info.xlsx', help='House Information')
-        self._parser.add_argument('--House_Match', type=str, default='data/House_Match.xlsx', help='House Match')
-        self._parser.add_argument('--Mismatch_Penalty_path', type=str, default='data/Mismatch_Penalty.xlsx', help='Mismatch Penalty Parameter')
-        self._parser.add_argument('--Staging_Area_path', type=str, default='data/Staging_Area.xlsx', help='Staging Area Information/Parameter')
-        self._parser.add_argument('--Study_Region_path', type=str, default='data/Study_Region.xlsx', help='Study Region Information/Parameter')
-        self._parser.add_argument('--Demand_Trailer_path', type=str, default='test_data_3/trailer_50_3.txt', help='Study Region Information/Parameter')
-        self._parser.add_argument('--Demand_MHU_path', type=str, default='test_data_3/MHU_50_1.txt', help='Study Region Information/Parameter')
-        self._parser.add_argument('--Supplier_path', type=str, default='data/Supplier.xlsx', help='Supplier Information/Parameter')
-        self._parser.add_argument('--Timepoint_path', type=str, default='data/Timepoint.xlsx', help='Three Time points')
-        self._parser.add_argument('--Unmet_Penalty_path', type=str, default='data/Unmet_Penalty.xlsx', help='Unmet Penalty Parameter')
-        self._parser.add_argument('--Unused_Inventory_Penalty_path', type=str, default='data/Unused_Inventory_Penalty.xlsx', help='Unused Inventory Penalty Penalty')
+        # self._parser.add_argument('--Deprivation_Penalty_path', type=str, default='data/Deprivation_Penalty.xlsx', help='Deprivation Cost Penalty Parameter')
+        # self._parser.add_argument('--House_Info_path', type=str, default='data/House_Info.xlsx', help='House Information')
+        # self._parser.add_argument('--House_Match', type=str, default='data/House_Match.xlsx', help='House Match')
+        # self._parser.add_argument('--Mismatch_Penalty_path', type=str, default='data/Mismatch_Penalty.xlsx', help='Mismatch Penalty Parameter')
+        # self._parser.add_argument('--Staging_Area_path', type=str, default='data/Staging_Area.xlsx', help='Staging Area Information/Parameter')
+        # self._parser.add_argument('--Study_Region_path', type=str, default='data/Study_Region.xlsx', help='Study Region Information/Parameter')
+        # self._parser.add_argument('--Demand_Trailer_path', type=str, default='test_data_3/trailer_50_3.txt', help='Study Region Information/Parameter')
+        # self._parser.add_argument('--Demand_MHU_path', type=str, default='test_data_3/MHU_50_1.txt', help='Study Region Information/Parameter')
+        # self._parser.add_argument('--Supplier_path', type=str, default='data/Supplier.xlsx', help='Supplier Information/Parameter')
+        # self._parser.add_argument('--Timepoint_path', type=str, default='data/Timepoint.xlsx', help='Three Time points')
+        # self._parser.add_argument('--Unmet_Penalty_path', type=str, default='data/Unmet_Penalty.xlsx', help='Unmet Penalty Parameter')
+        # self._parser.add_argument('--Unused_Inventory_Penalty_path', type=str, default='data/Unused_Inventory_Penalty.xlsx', help='Unused Inventory Penalty Penalty')
 
 
 
