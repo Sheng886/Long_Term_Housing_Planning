@@ -95,6 +95,12 @@ class baseline_class():
             for p in range(args.P):
                 inventory_level[w][p] = self.x[w,p].x
 
+        Used_time = np.zeros((args.T,args.K))
+
+        for t in range(args.T):
+            for k in range(args.K):
+                Used_time[t][k] = sum(self.v[w,p,t,k].x for w in range(args.W) for p in range(args.P))
+
         
         operation_cost_total = sum((self.idata.wj_dis[w][j] + self.idata.I_p[p]*self.idata.O_p[p])*self.f[w,j,p,g,t,k].x*args.t_cost for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for k in range(args.K))/args.K
         holding_cost_total = sum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t,k].x for w in range(args.W) for p in range(args.P) for t in range(args.T) for k in range(args.K))/args.K
@@ -110,5 +116,11 @@ class baseline_class():
         data = [[self.model.ObjVal,operation_cost_total,holding_cost_total,unmet_cost_total,replenish_cost_total,group_value_cost]]
         df = pd.DataFrame(data, columns=[df_name])
         df.to_csv("Cost_structure.csv")
+
+        df = pd.DataFrame(inventory_level)
+        df.to_csv("Inventory_Policy.csv")
+
+        df = pd.DataFrame(Used_time)
+        df.to_csv("Used_time.csv")
      
 

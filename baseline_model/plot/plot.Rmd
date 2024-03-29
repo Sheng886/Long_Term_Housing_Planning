@@ -1,0 +1,44 @@
+---
+title: "Regression"
+output: html_document
+date: "2022-09-22"
+---
+
+## Package
+
+```{r}
+library(scico)
+library(sf)
+library(ncdf4)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork)
+library("readxl")
+library(ggpattern)
+library(scales)
+library(latex2exp)
+```
+
+```{r}
+Used_time = read.csv("Used_time.csv")
+
+ggplot(Used_time, aes(x = Time, y = Inventory)) +
+  geom_line() +
+  geom_point() 
+
+```
+```{r}
+palette = c("purple3", "red3", "navy")
+
+names(palette) = unique(points$Tradition)
+
+plot(base_map)
+
+plot(st_geometry(points), pch=16, col=palette[points$Tradition], cex=2, add=T)
+
+legend("topleft", legend=names(palette), col=palette, 
+	pch=16, pt.cex=2, title="Capacity")
+
+```
+
