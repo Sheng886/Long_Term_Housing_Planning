@@ -17,7 +17,7 @@ class Arguments:
 
         # Parameter
         self._parser.add_argument('--t_cost', type=int, default=10, help='Transportation cost')
-        self._parser.add_argument('--g_value', type=int, default=2500, help='Mean of Group Value')
+        self._parser.add_argument('--g_value', type=int, default=5000, help='Mean of Group Value')
 
         # Path
         # self._parser.add_argument('--Deprivation_Penalty_path', type=str, default='data/Deprivation_Penalty.xlsx', help='Deprivation Cost Penalty Parameter')

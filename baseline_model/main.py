@@ -14,6 +14,6 @@ if __name__ == '__main__':
 
     input_data = inpu_data.input_data_class(args)
     baseline_model = baseline.baseline_class(args,input_data)
-    # baseline_model.run()
+    baseline_model.run(args)
 
 
