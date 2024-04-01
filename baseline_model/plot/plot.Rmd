@@ -21,24 +21,13 @@ library(latex2exp)
 ```
 
 ```{r}
-Used_time = read.csv("Used_time.csv")
+Used_time = read.csv("Used_time2.csv")
 
 ggplot(Used_time, aes(x = Time, y = Inventory)) +
   geom_line() +
   geom_point() 
 
+ggsave("Used_time.png")
 ```
-```{r}
-palette = c("purple3", "red3", "navy")
-
-names(palette) = unique(points$Tradition)
-
-plot(base_map)
-
-plot(st_geometry(points), pch=16, col=palette[points$Tradition], cex=2, add=T)
-
-legend("topleft", legend=names(palette), col=palette, 
-	pch=16, pt.cex=2, title="Capacity")
-
 ```
 

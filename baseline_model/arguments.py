@@ -19,6 +19,10 @@ class Arguments:
         self._parser.add_argument('--t_cost', type=int, default=10, help='Transportation cost')
         self._parser.add_argument('--g_value', type=int, default=5000, help='Mean of Group Value')
 
+        # Scen Factor
+        self._parser.add_argument('--s_factor', type=int, default=10, help='Shortage Factor')
+
+
         # Path
         # self._parser.add_argument('--Deprivation_Penalty_path', type=str, default='data/Deprivation_Penalty.xlsx', help='Deprivation Cost Penalty Parameter')
         # self._parser.add_argument('--House_Info_path', type=str, default='data/House_Info.xlsx', help='House Information')

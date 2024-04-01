@@ -29,7 +29,7 @@ class baseline_class():
 
         # Objective
         self.model.setObjective((1/(args.K))*quicksum((quicksum((self.idata.wj_dis[w][j] + self.idata.I_p[p]*self.idata.O_p[p])*self.f[w,j,p,g,t,k]*args.t_cost for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T))
-                                +quicksum(self.idata.CU_g[g]*self.q[g,t,k] for g in range(args.G) for t in range(args.T))
+                                +quicksum(args.s_factor*self.idata.CU_g[g]*self.q[g,t,k] for g in range(args.G) for t in range(args.T))
                                 +quicksum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t,k] for w in range(args.W) for p in range(args.P) for t in range(args.T))
                                 +quicksum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p,k] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                 -quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A))) 
@@ -40,6 +40,8 @@ class baseline_class():
         # Policy
         for w in range(args.W):
             self.model.addConstr(quicksum(self.idata.u_p[p]*self.x[w,p] for p in range(args.P)) <= self.idata.Cap_w[w])
+
+
 
         # Initail Inventory
         for k in range(args.K):
@@ -80,6 +82,9 @@ class baseline_class():
                     for j in range(args.J):
                         self.model.addConstr(quicksum(self.f[w,j,p,g,t,k] for w in range(args.W) for p in range(args.P)) + self.q[g,t,k] == self.idata.demand[k][j][g][t])
 
+        for k in range(args.K):
+            print(sum(self.idata.demand[k][j][g][t] for g in range(args.G) for t in range(1,args.T) for j in range(args.J)))
+
 
     def run(self,args):
 
@@ -105,7 +110,7 @@ class baseline_class():
         operation_cost_total = sum((self.idata.wj_dis[w][j] + self.idata.I_p[p]*self.idata.O_p[p])*self.f[w,j,p,g,t,k].x*args.t_cost for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for k in range(args.K))/args.K
         holding_cost_total = sum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t,k].x for w in range(args.W) for p in range(args.P) for t in range(args.T) for k in range(args.K))/args.K
         unmet_cost_total = sum(self.idata.CU_g[g]*self.q[g,t,k].x for g in range(args.G) for t in range(args.T) for k in range(args.K))/args.K
-        replenish_cost_total = sum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p,k].x for i in range(args.I) for w in range(args.W) for p in range(args.P) for k in range(args.K))/args.K
+        replenish_cost_total = sum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p,k] for i in range(args.I) for w in range(args.W) for p in range(args.P)for k in range(args.K))/args.K
         group_value_cost = sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k].x*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A) for k in range(args.K))/args.K
 
         value_group = np.zeros((args.G))

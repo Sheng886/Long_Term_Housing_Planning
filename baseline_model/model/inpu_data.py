@@ -17,27 +17,27 @@ class input_data_class:
         self.demand = np.zeros((args.K,args.J,args.G,args.T))
         for k in range(args.K):
             for j in range(args.J):
-                a = 0
+                a = 25
                 b = 0
                 for g in range(args.G):
-                    if(g == 5):
-                        a = 1200
-                        b = 1000
-                    elif(g == 3):
-                        a = 1000
-                        b = 800
-                    elif(g == 4):
-                        a = 800
-                        b = 600
-                    elif(g == 2):
-                        a = 600
-                        b = 400
-                    elif(g == 0):
-                        a = 400
-                        b = 200
-                    elif(g == 1):
-                        a = 200
-                        b = 0
+                    # if(g == 5):
+                    #     a = 1200
+                    #     b = 1000
+                    # elif(g == 3):
+                    #     a = 1000
+                    #     b = 800
+                    # elif(g == 4):
+                    #     a = 800
+                    #     b = 600
+                    # elif(g == 2):
+                    #     a = 600
+                    #     b = 400
+                    # elif(g == 0):
+                    #     a = 400
+                    #     b = 200
+                    # elif(g == 1):
+                    #     a = 200
+                    #     b = 0
                     for t in range(args.T):
                         self.demand[k][j][g][t] = np.random.randint(b,a)
 
