@@ -17,6 +17,8 @@ class baseline_class():
 
         # First-stage
         self.x = self.model.addVars(args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='xwp')
+        self.diff_x = self.model.addVars(args.P, args.P, vtype=GRB.CONTINUOUS, name='qgt')
+        self.abs_x = self.model.addVars(args.P, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
         
         # Second-stage
         self.v = self.model.addVars(args.W, args.P, args.T, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='vipt')
@@ -43,7 +45,13 @@ class baseline_class():
         for w in range(args.W):
             self.model.addConstr(quicksum(self.idata.u_p[p]*self.x[w,p] for p in range(args.P)) <= self.idata.Cap_w[w])
 
-
+        # Fair (Preparation)
+        for p1 in range(args.P):
+            for p2 in range(args.P):
+                self.model.addConstr(quicksum(self.x[w,p1] for w in range(args.W)) -  quicksum(self.x[w,p2] for w in range(args.W)) == self.diff_x[p1,p2])
+                self.model.addGenConstrAbs(self.abs_x[p1,p2], self.diff_x[p1,p2])
+                self.model.addConstr(self.abs_x[p1,p2] <= 0.1)
+            
 
         # Initail Inventory
         for k in range(args.K):
@@ -95,7 +103,16 @@ class baseline_class():
                         self.model.addConstr(self.abs[j,g1,g2,t,k] <= 0.1)
 
 
-                # Fair Constraint (Shoratge)
+        # Fair Constraint (Shoratge)
+        for k in range(args.K):
+            for g1 in range(args.G):
+                for g2 in range(args.G):
+                    for t in range(1,args.T):
+                        self.model.addConstr(self.q[j,g1,t,k]*self.idata.demand[k][j][g2][t] - self.q[j,g2,t,k]*self.idata.demand[k][j][g1][t] == self.diff[j,g1,g2,t,k]*self.idata.demand[k][j][g1][t]*self.idata.demand[k][j][g2][t])
+                        self.model.addGenConstrAbs(self.abs[j,g1,g2,t,k], self.diff[j,g1,g2,t,k])
+                        self.model.addConstr(self.abs[j,g1,g2,t,k] <= 0.1)
+
+        # Fair Constraint (Preparation)
         for k in range(args.K):
             for g1 in range(args.G):
                 for g2 in range(args.G):
