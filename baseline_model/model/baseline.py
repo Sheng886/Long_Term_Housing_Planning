@@ -21,15 +21,17 @@ class baseline_class():
         # Second-stage
         self.v = self.model.addVars(args.W, args.P, args.T, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='vipt')
         self.f = self.model.addVars(args.W, args.J, args.P, args.G, args.T, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='fwjpgt')
-        self.q = self.model.addVars(args.G, args.T, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
+        self.q = self.model.addVars(args.J, args.G, args.T, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
         self.s = self.model.addVars(args.I, args.W, args.P, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='siwpt')
         self.r = self.model.addVars(args.W, args.P, args.K, lb=0.0, name='rwp')
+        self.diff = self.model.addVars(args.J, args.G, args.G, args.T, args.K, vtype=GRB.CONTINUOUS, name='qgt')
+        self.abs = self.model.addVars(args.J, args.G, args.G, args.T, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
 
         # pdb.set_trace()
 
         # Objective
         self.model.setObjective((1/(args.K))*quicksum((quicksum((self.idata.wj_dis[w][j] + self.idata.I_p[p]*self.idata.O_p[p])*self.f[w,j,p,g,t,k]*args.t_cost for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T))
-                                +quicksum(args.s_factor*self.idata.CU_g[g]*self.q[g,t,k] for g in range(args.G) for t in range(args.T))
+                                +quicksum(args.s_factor*self.idata.CU_g[g]*self.q[j,g,t,k] for g in range(args.G) for t in range(args.T) for j in range(args.J))
                                 +quicksum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t,k] for w in range(args.W) for p in range(args.P) for t in range(args.T))
                                 +quicksum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p,k] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                 -quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A))) 
@@ -80,10 +82,28 @@ class baseline_class():
             for g in range(args.G):
                 for t in range(1,args.T):
                     for j in range(args.J):
-                        self.model.addConstr(quicksum(self.f[w,j,p,g,t,k] for w in range(args.W) for p in range(args.P)) + self.q[g,t,k] == self.idata.demand[k][j][g][t])
+                        self.model.addConstr(quicksum(self.f[w,j,p,g,t,k] for w in range(args.W) for p in range(args.P)) + self.q[j,g,t,k] == self.idata.demand[k][j][g][t])
 
+
+        # Fair Constraint (Shoratge)
         for k in range(args.K):
-            print(sum(self.idata.demand[k][j][g][t] for g in range(args.G) for t in range(1,args.T) for j in range(args.J)))
+            for g1 in range(args.G):
+                for g2 in range(args.G):
+                    for t in range(1,args.T):
+                        self.model.addConstr(self.q[j,g1,t,k]*self.idata.demand[k][j][g2][t] - self.q[j,g2,t,k]*self.idata.demand[k][j][g1][t] == self.diff[j,g1,g2,t,k]*self.idata.demand[k][j][g1][t]*self.idata.demand[k][j][g2][t])
+                        self.model.addGenConstrAbs(self.abs[j,g1,g2,t,k], self.diff[j,g1,g2,t,k])
+                        self.model.addConstr(self.abs[j,g1,g2,t,k] <= 0.1)
+
+
+                # Fair Constraint (Shoratge)
+        for k in range(args.K):
+            for g1 in range(args.G):
+                for g2 in range(args.G):
+                    for t in range(1,args.T):
+                        self.model.addConstr(self.q[j,g1,t,k]*self.idata.demand[k][j][g2][t] - self.q[j,g2,t,k]*self.idata.demand[k][j][g1][t] == self.diff[j,g1,g2,t,k]*self.idata.demand[k][j][g1][t]*self.idata.demand[k][j][g2][t])
+                        self.model.addGenConstrAbs(self.abs[j,g1,g2,t,k], self.diff[j,g1,g2,t,k])
+                        self.model.addConstr(self.abs[j,g1,g2,t,k] <= 0.1)
+
 
 
     def run(self,args):
@@ -109,8 +129,8 @@ class baseline_class():
         
         operation_cost_total = sum((self.idata.wj_dis[w][j] + self.idata.I_p[p]*self.idata.O_p[p])*self.f[w,j,p,g,t,k].x*args.t_cost for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for k in range(args.K))/args.K
         holding_cost_total = sum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t,k].x for w in range(args.W) for p in range(args.P) for t in range(args.T) for k in range(args.K))/args.K
-        unmet_cost_total = sum(self.idata.CU_g[g]*self.q[g,t,k].x for g in range(args.G) for t in range(args.T) for k in range(args.K))/args.K
-        replenish_cost_total = sum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p,k] for i in range(args.I) for w in range(args.W) for p in range(args.P)for k in range(args.K))/args.K
+        unmet_cost_total = sum(self.idata.CU_g[g]*self.q[j,g,t,k].x for g in range(args.G) for t in range(args.T) for k in range(args.K) for j in range(args.J))/args.K
+        replenish_cost_total = sum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p,k].x for i in range(args.I) for w in range(args.W) for p in range(args.P)for k in range(args.K))/args.K
         group_value_cost = sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k].x*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A) for k in range(args.K))/args.K
 
         value_group = np.zeros((args.G))

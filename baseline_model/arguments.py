@@ -20,7 +20,7 @@ class Arguments:
         self._parser.add_argument('--g_value', type=int, default=5000, help='Mean of Group Value')
 
         # Scen Factor
-        self._parser.add_argument('--s_factor', type=int, default=10, help='Shortage Factor')
+        self._parser.add_argument('--s_factor', type=int, default=1, help='Shortage Factor')
 
 
         # Path
