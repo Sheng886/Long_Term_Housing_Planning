@@ -4,6 +4,7 @@ class Arguments:
     def __init__(self):
         self._parser = argparse.ArgumentParser(description='Time_index_model')
 
+        # model
         self._parser.add_argument('--model', type=str, default="baseline", help='Number of Supplier')
 
         # Number of Elements in the Set
@@ -19,13 +20,15 @@ class Arguments:
         # Parameter
         self._parser.add_argument('--t_cost', type=int, default=10, help='Transportation cost')
         self._parser.add_argument('--g_value', type=int, default=5000, help='Mean of Group Value')
-        self._parser.add_argument('--fair', type=int, default=0.1, help='Fairness Level')
+        self._parser.add_argument('--fair', type=float, default=0.5, help='Fairness Level')
 
-        # Scen Factor
+        # Shortage Factor
         self._parser.add_argument('--s_factor', type=float, default=1, help='Shortage Factor')
 
         # Fairness_switch
-        self._parser.add_argument('--fair_sw', type=int, default=1, help='Shortage Factor')
+        self._parser.add_argument('--fair_sw_group', type=int, default=1, help='fairness')
+        self._parser.add_argument('--fair_sw_region', type=int, default=0, help='fairness')
+
 
 
         # Path

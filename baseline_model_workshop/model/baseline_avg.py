@@ -93,15 +93,15 @@ class baseline_class():
                         self.model.addConstr(quicksum(self.f[w,j,p,g,t] for w in range(args.W) for p in range(args.P)) + self.q[j,g,t] == self.avg_demand[j][g][t])
 
 
-        if(args.fair_sw == 1):
-        # Fair Constraint (Shoratge)
-            for k in range(args.K):
-                for g1 in range(args.G):
-                    for g2 in range(args.G):
-                        for t in range(1,args.T):
-                            self.model.addConstr(self.q[j,g1,t]*self.avg_demand[j][g2][t] - self.q[j,g2,t]*self.avg_demand[j][g1][t] == self.diff[j,g1,g2,t]*self.avg_demand[j][g1][t]*self.avg_demand[j][g2][t])
-                            self.model.addGenConstrAbs(self.abs[j,g1,g2,t], self.diff[j,g1,g2,t])
-                            self.model.addConstr(self.abs[j,g1,g2,t] <= args.fair)
+        # if(args.fair_sw == 1):
+        # # Fair Constraint (Shoratge)
+        #     for k in range(args.K):
+        #         for g1 in range(args.G):
+        #             for g2 in range(args.G):
+        #                 for t in range(1,args.T):
+        #                     self.model.addConstr(self.q[j,g1,t]*self.avg_demand[j][g2][t] - self.q[j,g2,t]*self.avg_demand[j][g1][t] == self.diff[j,g1,g2,t]*self.avg_demand[j][g1][t]*self.avg_demand[j][g2][t])
+        #                     self.model.addGenConstrAbs(self.abs[j,g1,g2,t], self.diff[j,g1,g2,t])
+        #                     self.model.addConstr(self.abs[j,g1,g2,t] <= args.fair)
 
     
 

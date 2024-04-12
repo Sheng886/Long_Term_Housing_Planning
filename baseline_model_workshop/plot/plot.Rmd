@@ -11,16 +11,28 @@ library(ggplot2)
 library(patchwork)
 library("readxl")
 library(ggpattern)
+
+library("rnaturalearth")
+library("rnaturalearthdata")
+library("sf")
 ```
 
 ```{r}
-Used_time = read.csv("Used_time2.csv")
+Used_time = read.csv("dataset.csv")
 
 ggplot(Used_time, aes(x = Time, y = Inventory)) +
   geom_line() +
   geom_point() 
 
-ggsave("Used_time_2.png")
+ggsave("Used_time_02.png")
 ```
+
+```{r}
+counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
+counties <- subset(counties, grepl("florida", counties$ID))
+counties$area <- as.numeric(st_area(counties))
+head(counties)
+```
+
 ```
 

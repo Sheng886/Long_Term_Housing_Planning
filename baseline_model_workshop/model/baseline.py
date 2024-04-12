@@ -10,6 +10,8 @@ import pdb
 class baseline_class():
     def __init__(self, args, input_data, xx = None):
 
+
+
         self.args = args
         self.idata = input_data
 
@@ -29,8 +31,12 @@ class baseline_class():
         self.q = self.model.addVars(args.J, args.G, args.T, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
         self.s = self.model.addVars(args.I, args.W, args.P, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='siwpt')
         self.r = self.model.addVars(args.W, args.P, args.K, lb=0.0, name='rwp')
-        self.diff = self.model.addVars(args.J, args.G, args.G, args.T, args.K, vtype=GRB.CONTINUOUS, name='qgt')
-        self.abs = self.model.addVars(args.J, args.G, args.G, args.T, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
+
+        self.diff_group = self.model.addVars(args.G, args.G, args.T, args.K, vtype=GRB.CONTINUOUS, name='qgt')
+        self.abs_group = self.model.addVars(args.G, args.G, args.T, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
+
+        self.diff_region = self.model.addVars(args.J, args.J, args.T, args.K, vtype=GRB.CONTINUOUS, name='qgt')
+        self.abs_region = self.model.addVars(args.J, args.J, args.T, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
 
         # pdb.set_trace()
 
@@ -49,7 +55,6 @@ class baseline_class():
                     self.model.addConstr(self.x[w,p] == xx[w,p].x)
 
         
-
         # Policy
         if(args.model == "perfect"):
             for w in range(args.W):
@@ -113,15 +118,31 @@ class baseline_class():
                         self.model.addConstr(quicksum(self.f[w,j,p,g,t,k] for w in range(args.W) for p in range(args.P)) + self.q[j,g,t,k] == self.idata.demand[k][j][g][t])
 
 
-        if(args.fair_sw == 1):
-        # Fair Constraint (Shoratge)
+        
+
+
+        # Fair Constraint Group (Shoratge)
+        if(args.fair_sw_group == 1):
             for k in range(args.K):
                 for g1 in range(args.G):
                     for g2 in range(args.G):
                         for t in range(1,args.T):
-                            self.model.addConstr(self.q[j,g1,t,k]*self.idata.demand[k][j][g2][t] - self.q[j,g2,t,k]*self.idata.demand[k][j][g1][t] == self.diff[j,g1,g2,t,k]*self.idata.demand[k][j][g1][t]*self.idata.demand[k][j][g2][t])
-                            self.model.addGenConstrAbs(self.abs[j,g1,g2,t,k], self.diff[j,g1,g2,t,k])
-                            self.model.addConstr(self.abs[j,g1,g2,t,k] <= args.fair)
+                            if(sum(self.idata.demand[k][j][g1][t] for j in range(args.J)) >= 10e-5 and sum(self.idata.demand[k][j][g2][t] for j in range(args.J)) >= 10e-5):
+                                self.model.addConstr(quicksum(self.q[j,g1,t,k] for j in range(args.J))/sum(self.idata.demand[k][j][g1][t] for j in range(args.J)) - quicksum(self.q[j,g2,t,k] for j in range(args.J))/sum(self.idata.demand[k][j][g2][t] for j in range(args.J)) == self.diff_group[g1,g2,t,k])
+                                self.model.addConstr(self.abs_group[g1,g2,t,k] == gp.abs_(self.diff_group[g1,g2,t,k]))
+                                self.model.addConstr(self.abs_group[g1,g2,t,k] <= args.fair)
+
+
+        # Fair Constraint Group (Shoratge)
+        if(args.fair_sw_region == 1):
+            for k in range(args.K):
+                for j1 in range(args.J):
+                    for j2 in range(args.J):
+                        for t in range(1,args.T):
+                            if(sum(self.idata.demand[k][j1][g][t] for g in range(args.G)) >= 10e-5 and sum(self.idata.demand[k][j2][g][t] for g in range(args.G)) >= 10e-5):
+                                self.model.addConstr(quicksum(self.q[j1,g,t,k] for g in range(args.G))/sum(self.idata.demand[k][j1][g][t] for g in range(args.G)) - quicksum(self.q[j2,g,t,k] for g in range(args.G))/sum(self.idata.demand[k][j2][g][t] for g in range(args.G)) == self.diff_region[j1,j2,t,k])
+                                self.model.addConstr(self.abs_region[j1,j2,t,k] == gp.abs_(self.diff_region[j1,j2,t,k]))
+                                self.model.addConstr(self.abs_region[j1,j2,t,k] <= args.fair)
 
 
     def run(self,args):
@@ -158,31 +179,48 @@ class baseline_class():
 
 
         if(args.model == "baseline"):
+            
             for k in range(args.K):
+                percentage = np.zeros((args.T,args.G))
+                for t in range(1,args.T):
+                    for g in range(args.G):
+                        if(sum(self.idata.demand[k][j][g][t] for j in range(args.J)) <= 10e-5):
+                            percentage[t][g] = -1
+                        else:
+                            percentage[t][g] = sum(self.q[j,g,t,k].x for j in range(args.J))/sum(self.idata.demand[k][j][g][t] for j in range(args.J))
+
+                df = pd.DataFrame(percentage)
+                name = "{model}_group_demand_percentage_{k}.csv".format(model = args.model, k = str(k))
+                df.to_csv(name)
+
+            
+            for k in range(args.K):
+                percentage = np.zeros((args.T,args.J))
                 for t in range(1,args.T):
                     for j in range(args.J):
-                        percentage = np.zeros((args.T,args.J))
-                        if(sum(self.idata.demand[k][j][g][t] for g in range(args.G)) == 0):
+                        if(sum(self.idata.demand[k][j][g][t] for g in range(args.G)) <= 10e-5):
                             percentage[t][j] = -1
                         else:
-                            print(sum(self.q[j,g,t,k].x for g in range(args.G)),sum(self.idata.demand[k][j][g][t] for g in range(args.G)))
                             percentage[t][j] = sum(self.q[j,g,t,k].x for g in range(args.G))/sum(self.idata.demand[k][j][g][t] for g in range(args.G))
 
-                        df = pd.DataFrame(percentage)
-                        name = "demand_percentage_{k}.csv".format(k = str(k))
-                        df.to_csv(name)
+                df = pd.DataFrame(percentage)
+                name = "{model}_region_demand_percentage_{k}.csv".format(model = args.model, k = str(k))
+                df.to_csv(name)
 
 
         df_name = ["OPT","Operation_Cost","Holding_Cost","Unmet_Cost","Replenish_Cost","Victim_value"]
         data = [[self.model.ObjVal,operation_cost_total,holding_cost_total,unmet_cost_total,replenish_cost_total,group_value_cost]]
         df = pd.DataFrame(data, columns=[df_name])
-        df.to_csv("Cost_structure.csv")
+        name = "{model}_Cost_structure.csv".format(model = args.model)
+        df.to_csv(name)
 
         if(args.model != "perfect"):
             df = pd.DataFrame(inventory_level)
-            df.to_csv("Inventory_Policy.csv")
+            name = "{model}_Inventory_Policy.csv".format(model = args.model)
+            df.to_csv(name)
 
         df = pd.DataFrame(Used_time)
-        df.to_csv("Used_time.csv")
+        name = "{model}_Used_time.csv".format(model = args.model)
+        df.to_csv(name)
      
 

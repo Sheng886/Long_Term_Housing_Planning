@@ -21,7 +21,6 @@ if __name__ == '__main__':
 
         print("avg end")
         print("----------------")
-
         baseline_model = baseline.baseline_class(args,input_data,x)
         baseline_model.run(args)
         
