@@ -8,7 +8,7 @@ from gurobipy import quicksum
 import pdb
 
 class baseline_class():
-    def __init__(self, args, input_data):
+    def __init__(self, args, input_data, xx = None):
 
         self.args = args
         self.idata = input_data
@@ -19,6 +19,9 @@ class baseline_class():
         self.x = self.model.addVars(args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='xwp')
         self.diff_x = self.model.addVars(args.P, args.P, vtype=GRB.CONTINUOUS, name='qgt')
         self.abs_x = self.model.addVars(args.P, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
+
+        if(args.model == "perfect"):
+            self.xk = self.model.addVars(args.W, args.P, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='xwp')
         
         # Second-stage
         self.v = self.model.addVars(args.W, args.P, args.T, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='vipt')
@@ -40,17 +43,32 @@ class baseline_class():
                                 for k in range(args.K)), GRB.MINIMIZE);
 
 
+        if(args.model == "avg"):
+            for w in range(args.W):
+                for p in range(args.P):
+                    self.model.addConstr(self.x[w,p] == xx[w,p].x)
+
+        
 
         # Policy
-        for w in range(args.W):
-            self.model.addConstr(quicksum(self.idata.u_p[p]*self.x[w,p] for p in range(args.P)) <= self.idata.Cap_w[w])
+        if(args.model == "perfect"):
+            for w in range(args.W):
+                for k in range(args.K):
+                    self.model.addConstr(quicksum(self.idata.u_p[p]*self.xk[w,p,k] for p in range(args.P)) <= self.idata.Cap_w[w])
+        else:
+            for w in range(args.W):
+                self.model.addConstr(quicksum(self.idata.u_p[p]*self.x[w,p] for p in range(args.P)) <= self.idata.Cap_w[w])
            
 
         # Initail Inventory
         for k in range(args.K):
             for w in range(args.W):
                 for p in range(args.P):
-                    self.model.addConstr(self.v[w,p,0,k] == self.x[w,p])
+                    if(args.model == "perfect"):
+                        self.model.addConstr(self.v[w,p,0,k] == self.xk[w,p,k])
+                    else:
+                        self.model.addConstr(self.v[w,p,0,k] == self.x[w,p])
+                    
 
         # Initail flow
         for w in range(args.W):
@@ -71,12 +89,21 @@ class baseline_class():
         for k in range(args.K):
             for w in range(args.W):
                 for p in range(args.P):
-                    self.model.addConstr(self.v[w,p,args.T-1,k] + quicksum(self.s[i,w,p,k] for i in range(args.I))  == self.x[w,p])
+                    if(args.model == "perfect"):
+                        if(k+1 == args.K):
+                            self.model.addConstr(self.v[w,p,args.T-1,k] + quicksum(self.s[i,w,p,k] for i in range(args.I))  == self.xk[w,p,0])
+                        else:
+                            self.model.addConstr(self.v[w,p,args.T-1,k] + quicksum(self.s[i,w,p,k] for i in range(args.I))  == self.xk[w,p,k+1])
+                    else:
+                        self.model.addConstr(self.v[w,p,args.T-1,k] + quicksum(self.s[i,w,p,k] for i in range(args.I))  == self.x[w,p])
 
         # Recycle Inventory
         for k in range(args.K):
             for p in range(args.P):
-                self.model.addConstr(quicksum(self.r[w,p,k] for w in range(args.W)) == self.idata.R_p[p]*(quicksum(self.x[w,p]-self.v[w,p,args.T-1,k] for w in range(args.W))))
+                if(args.model == "perfect"):
+                    self.model.addConstr(quicksum(self.r[w,p,k] for w in range(args.W)) == self.idata.R_p[p]*(quicksum(self.xk[w,p,k]-self.v[w,p,args.T-1,k] for w in range(args.W))))
+                else:
+                    self.model.addConstr(quicksum(self.r[w,p,k] for w in range(args.W)) == self.idata.R_p[p]*(quicksum(self.x[w,p]-self.v[w,p,args.T-1,k] for w in range(args.W))))
 
         # Demand
         for k in range(args.K):
@@ -86,14 +113,15 @@ class baseline_class():
                         self.model.addConstr(quicksum(self.f[w,j,p,g,t,k] for w in range(args.W) for p in range(args.P)) + self.q[j,g,t,k] == self.idata.demand[k][j][g][t])
 
 
+        if(args.fair_sw == 1):
         # Fair Constraint (Shoratge)
-        for k in range(args.K):
-            for g1 in range(args.G):
-                for g2 in range(args.G):
-                    for t in range(1,args.T):
-                        self.model.addConstr(self.q[j,g1,t,k]*self.idata.demand[k][j][g2][t] - self.q[j,g2,t,k]*self.idata.demand[k][j][g1][t] == self.diff[j,g1,g2,t,k]*self.idata.demand[k][j][g1][t]*self.idata.demand[k][j][g2][t])
-                        self.model.addGenConstrAbs(self.abs[j,g1,g2,t,k], self.diff[j,g1,g2,t,k])
-                        self.model.addConstr(self.abs[j,g1,g2,t,k] <= args.fair)
+            for k in range(args.K):
+                for g1 in range(args.G):
+                    for g2 in range(args.G):
+                        for t in range(1,args.T):
+                            self.model.addConstr(self.q[j,g1,t,k]*self.idata.demand[k][j][g2][t] - self.q[j,g2,t,k]*self.idata.demand[k][j][g1][t] == self.diff[j,g1,g2,t,k]*self.idata.demand[k][j][g1][t]*self.idata.demand[k][j][g2][t])
+                            self.model.addGenConstrAbs(self.abs[j,g1,g2,t,k], self.diff[j,g1,g2,t,k])
+                            self.model.addConstr(self.abs[j,g1,g2,t,k] <= args.fair)
 
 
     def run(self,args):
@@ -105,10 +133,11 @@ class baseline_class():
         else:
             print("Infeasible or unbounded!")
 
-        inventory_level = np.zeros((args.W,args.P))
-        for w in range(args.W):
-            for p in range(args.P):
-                inventory_level[w][p] = self.x[w,p].x
+        if(args.model != "perfect"):
+            inventory_level = np.zeros((args.W,args.P))
+            for w in range(args.W):
+                for p in range(args.P):
+                    inventory_level[w][p] = self.x[w,p].x
 
         Used_time = np.zeros((args.T,args.K))
 
@@ -127,13 +156,31 @@ class baseline_class():
         for g in range(args.G):
             value_group = sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for t in range(args.T) for a in range(args.A) for k in range(args.K))
 
+
+        if(args.model == "baseline"):
+            for k in range(args.K):
+                for t in range(1,args.T):
+                    for j in range(args.J):
+                        percentage = np.zeros((args.T,args.J))
+                        if(sum(self.idata.demand[k][j][g][t] for g in range(args.G)) == 0):
+                            percentage[t][j] = -1
+                        else:
+                            print(sum(self.q[j,g,t,k].x for g in range(args.G)),sum(self.idata.demand[k][j][g][t] for g in range(args.G)))
+                            percentage[t][j] = sum(self.q[j,g,t,k].x for g in range(args.G))/sum(self.idata.demand[k][j][g][t] for g in range(args.G))
+
+                        df = pd.DataFrame(percentage)
+                        name = "demand_percentage_{k}.csv".format(k = str(k))
+                        df.to_csv(name)
+
+
         df_name = ["OPT","Operation_Cost","Holding_Cost","Unmet_Cost","Replenish_Cost","Victim_value"]
         data = [[self.model.ObjVal,operation_cost_total,holding_cost_total,unmet_cost_total,replenish_cost_total,group_value_cost]]
         df = pd.DataFrame(data, columns=[df_name])
         df.to_csv("Cost_structure.csv")
 
-        df = pd.DataFrame(inventory_level)
-        df.to_csv("Inventory_Policy.csv")
+        if(args.model != "perfect"):
+            df = pd.DataFrame(inventory_level)
+            df.to_csv("Inventory_Policy.csv")
 
         df = pd.DataFrame(Used_time)
         df.to_csv("Used_time.csv")
