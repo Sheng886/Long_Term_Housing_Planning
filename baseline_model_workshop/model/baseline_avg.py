@@ -21,7 +21,7 @@ class baseline_class():
             for g in range(args.G):
                 for t in range(args.T):
                     for k in range(args.K):
-                        self.avg_demand = self.avg_demand + self.idata.demand[k][j][g][t]
+                        self.avg_demand[j][g][t] = self.avg_demand[j][g][t] + self.idata.demand[k][j][g][t]
 
         self.avg_demand = self.avg_demand/args.K
 
