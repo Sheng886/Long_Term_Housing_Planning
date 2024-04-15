@@ -138,6 +138,8 @@ class baseline_class():
                 for k in range(args.K):
                     Used_time[t][k] = sum(self.v[w,p,t].x for w in range(args.W) for p in range(args.P))
 
+
+
         
             operation_cost_total = operation_cost_total + sum((self.idata.wj_dis[w][j] + self.idata.I_p[p]*self.idata.O_p[p])*self.f[w,j,p,g,t].x*args.t_cost for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) )
             holding_cost_total = operation_cost_total + sum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t].x for w in range(args.W) for p in range(args.P) for t in range(args.T))

@@ -1,0 +1,68 @@
+---
+title: "draw"
+output: html_document
+date: "2023-02-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(scico)
+library(sf)
+library(ncdf4)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork)
+library("readxl")
+library(scales)
+library(ggpattern)
+library("rnaturalearth")
+library("rnaturalearthdata")
+library("maps")
+```
+
+```{r}
+comapre_method = read.csv("DGGR_10.csv")
+ggplot(comapre_method,aes(x = Model,y=Cost, fill = Model))+geom_bar(stat="identity", width=0.5)+ scale_y_continuous(labels = scales::comma) + theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())+
+	scale_y_continuous(labels = label_number(suffix = " B", scale = 1e-9))
+ggsave("cost.png")
+```
+
+```{r}
+
+fairness = read.csv("region_fair.csv")
+
+counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
+counties <- subset(counties, grepl("south carolina", counties$ID))
+counties$Fairness_region = fairness$Fairness_region
+counties$Region = fairness$Region
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = counties, aes(fill = Region)) +
+    coord_sf(xlim = c(-84, -78), ylim = c(32, 36), expand = FALSE) + 
+    scale_fill_gradientn(limits = c(0.3,0.8),
+    colours=c("navyblue", "darkmagenta", "darkorange1"))
+ggsave("fair_no.png")
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = counties, aes(fill = Fairness_region)) +
+    coord_sf(xlim = c(-84, -78), ylim = c(32, 36), expand = FALSE)+ 
+    scale_fill_gradientn(limits = c(0.3,0.8),
+    colours=c("navyblue", "darkmagenta", "darkorange1"))
+ggsave("fair.png")
+
+```
+
+

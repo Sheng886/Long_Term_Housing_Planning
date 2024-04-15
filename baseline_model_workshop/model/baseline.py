@@ -22,8 +22,8 @@ class baseline_class():
         self.diff_x = self.model.addVars(args.P, args.P, vtype=GRB.CONTINUOUS, name='qgt')
         self.abs_x = self.model.addVars(args.P, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
 
-        if(args.model == "perfect"):
-            self.xk = self.model.addVars(args.W, args.P, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='xwp')
+        self.xk = self.model.addVars(args.W, args.P, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='xwp')
+        self.xkk = self.model.addVars(args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='xwp')
         
         # Second-stage
         self.v = self.model.addVars(args.W, args.P, args.T, args.K, lb=0.0, vtype=GRB.CONTINUOUS, name='vipt')
@@ -41,7 +41,7 @@ class baseline_class():
         # pdb.set_trace()
 
         # Objective
-        self.model.setObjective((1/(args.K))*quicksum((quicksum((self.idata.wj_dis[w][j] + self.idata.I_p[p]*self.idata.O_p[p])*self.f[w,j,p,g,t,k]*args.t_cost for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T))
+        self.model.setObjective(quicksum(self.idata.O_p[p]*self.x[w,p] for w in range(args.W) for p in range(args.P)) + (1/(args.K))*quicksum((quicksum((self.idata.wj_dis[w][j] + self.idata.I_p[p]*self.idata.O_p[p])*self.f[w,j,p,g,t,k]*args.t_cost for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T))
                                 +quicksum(args.s_factor*self.idata.CU_g[g]*self.q[j,g,t,k] for g in range(args.G) for t in range(args.T) for j in range(args.J))
                                 +quicksum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t,k] for w in range(args.W) for p in range(args.P) for t in range(args.T))
                                 +quicksum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p,k] for i in range(args.I) for w in range(args.W) for p in range(args.P))
@@ -60,6 +60,7 @@ class baseline_class():
             for w in range(args.W):
                 for k in range(args.K):
                     self.model.addConstr(quicksum(self.idata.u_p[p]*self.xk[w,p,k] for p in range(args.P)) <= self.idata.Cap_w[w])
+            
         else:
             for w in range(args.W):
                 self.model.addConstr(quicksum(self.idata.u_p[p]*self.x[w,p] for p in range(args.P)) <= self.idata.Cap_w[w])
@@ -166,7 +167,25 @@ class baseline_class():
             for k in range(args.K):
                 Used_time[t][k] = sum(self.v[w,p,t,k].x for w in range(args.W) for p in range(args.P))
 
-        
+
+        cost_scen = np.zeros((args.K,5))
+
+        for k in range(args.K):
+            cost_scen[k][0] = sum((self.idata.wj_dis[w][j] + self.idata.I_p[p]*self.idata.O_p[p])*self.f[w,j,p,g,t,k].x*args.t_cost for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T))
+            cost_scen[k][1] = sum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t,k].x for w in range(args.W) for p in range(args.P) for t in range(args.T))
+            cost_scen[k][2] = sum(args.s_factor*self.idata.CU_g[g]*self.q[j,g,t,k].x for g in range(args.G) for t in range(args.T) for j in range(args.J))
+            cost_scen[k][3] = sum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p,k].x for i in range(args.I) for w in range(args.W) for p in range(args.P))
+            cost_scen[k][4] = sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k].x*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A))
+
+        df = pd.DataFrame(cost_scen)
+        name = "{model}_cost_scen.csv".format(model = args.model)
+        df.to_csv(name)
+
+        if(args.model == "perfect"):
+            set_up_cost_total = quicksum(self.idata.O_p[p]*self.xk[w,p,1].x for w in range(args.W) for p in range(args.P))
+
+
+        set_up_cost_total = quicksum(self.idata.O_p[p]*self.x[w,p].x for w in range(args.W) for p in range(args.P))
         operation_cost_total = sum((self.idata.wj_dis[w][j] + self.idata.I_p[p]*self.idata.O_p[p])*self.f[w,j,p,g,t,k].x*args.t_cost for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for k in range(args.K))/args.K
         holding_cost_total = sum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t,k].x for w in range(args.W) for p in range(args.P) for t in range(args.T) for k in range(args.K))/args.K
         unmet_cost_total = sum(args.s_factor*self.idata.CU_g[g]*self.q[j,g,t,k].x for g in range(args.G) for t in range(args.T) for k in range(args.K) for j in range(args.J))/args.K
@@ -208,8 +227,8 @@ class baseline_class():
                 df.to_csv(name)
 
 
-        df_name = ["OPT","Operation_Cost","Holding_Cost","Unmet_Cost","Replenish_Cost","Victim_value"]
-        data = [[self.model.ObjVal,operation_cost_total,holding_cost_total,unmet_cost_total,replenish_cost_total,group_value_cost]]
+        df_name = ["OPT","Set_Up_cost","Operation_Cost","Holding_Cost","Unmet_Cost","Replenish_Cost","Victim_value"]
+        data = [[self.model.ObjVal,set_up_cost_total,operation_cost_total,holding_cost_total,unmet_cost_total,replenish_cost_total,group_value_cost]]
         df = pd.DataFrame(data, columns=[df_name])
         name = "{model}_Cost_structure.csv".format(model = args.model)
         df.to_csv(name)

@@ -22,7 +22,8 @@ Used_time = read.csv("dataset.csv")
 
 ggplot(Used_time, aes(x = Time, y = Inventory)) +
   geom_line() +
-  geom_point() 
+  geom_point() + 
+  scale_y_continuous(limits = c(0, 12000))
 
 ggsave("Used_time_02.png")
 ```
