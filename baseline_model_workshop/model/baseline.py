@@ -182,9 +182,9 @@ class baseline_class():
                 for g1 in range(args.G):
                     for g2 in range(args.G):
                         for t in range(1,args.T):
-                            G1 = quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g1]*self.f[w,j,p,g1,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g1]*self.f_p1[j,p,g1,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
+                            G1 = quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g1]*self.f[w,j,p,g1,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g1]*self.f_p1[j,p,g1,t,k]*args.g_value for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
                             
-                            G2 = quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g2]*self.f[w,j,p,g2,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g2]*self.f_p1[j,p,g2,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
+                            G2 = quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g2]*self.f[w,j,p,g2,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g2]*self.f_p1[j,p,g2,t,k]*args.g_value for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
 
                             self.model.addConstr(G1/self.idata.max_value_g[g1] - G2/self.idata.max_value_g[g2] == self.diff_value[g1,g2,t,k])
                             self.model.addConstr(self.abs_value[g1,g2,t,k] == gp.abs_(self.diff_value[g1,g2,t,k]))
@@ -288,6 +288,17 @@ class baseline_class():
 
                 df = pd.DataFrame(percentage)
                 name = "{path}/{model}_region_demand_percentage_{k}.csv".format(path=os_path, model = args.model, k = str(k))
+                df.to_csv(name)
+
+            for k in range(args.K):
+                percentage = np.zeros((args.T,args.G))
+                for t in range(1,args.T):
+                    for g in range(args.G):
+                        G = sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k].x*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + sum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g]*self.f_p1[j,p,g,t,k].x*args.g_value for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
+                        percentage[t][g] = G/self.idata.max_value_g[g]
+
+                df = pd.DataFrame(percentage)
+                name = "{path}/{model}_value_demand_percentage_{k}.csv".format(path=os_path, model = args.model, k = str(k))
                 df.to_csv(name)
 
 

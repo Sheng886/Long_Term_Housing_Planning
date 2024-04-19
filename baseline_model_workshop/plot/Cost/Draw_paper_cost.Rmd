@@ -48,14 +48,15 @@ counties <- subset(counties, grepl("south carolina", counties$ID))
 counties$Fairness_region = fairness$Fairness_region
 counties$Region = fairness$Region
 
-ggplot(data = world) +
+ggplot() +
     geom_sf() +
     geom_sf(data = counties, aes(fill = Region)) +
     coord_sf(xlim = c(-84, -78), ylim = c(32, 36), expand = FALSE) + 
     scale_fill_gradientn(limits = c(0.3,0.8),
     colours=c("navyblue", "darkmagenta", "darkorange1"))
 ggsave("fair_no.png")
-ggplot(data = world) +
+
+ggplot() +
     geom_sf() +
     geom_sf(data = counties, aes(fill = Fairness_region)) +
     coord_sf(xlim = c(-84, -78), ylim = c(32, 36), expand = FALSE)+ 
@@ -65,4 +66,20 @@ ggsave("fair.png")
 
 ```
 
+```{r}
+comapre_method = read.csv("group_fair.csv")
+ID = 1:12
+ggplot(comapre_method,aes(x = Victims_Group,y=Shortage_Rate, fill = Fairness))+geom_bar(position = "dodge", stat="identity", width=0.5)+ scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous("Household Victims Group", labels = as.character(ID), breaks = ID)
+ggsave("fair_group.png")
+ggsave("fair_group.png")
+```
+```{r}
+library(RColorBrewer)
+# Create Data
+Prop <- c(4000,3111,6)
+myPalette <- brewer.pal(5, "Set2") 
+# Make the default Pie Plot
+pie(Prop , labels = c("Rental Units","RAPIDO","Katrina Cottage"), border="white", col=myPalette)
+```
 
