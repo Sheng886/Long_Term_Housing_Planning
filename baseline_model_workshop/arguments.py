@@ -13,6 +13,7 @@ class Arguments:
         self._parser.add_argument('--J', type=int, default=46, help='Number of Study Region')
         self._parser.add_argument('--K', type=int, default=10, help='Scenario')
         self._parser.add_argument('--P', type=int, default=4, help='Housing Type')
+        self._parser.add_argument('--P1', type=int, default=2, help='Housing Type (no store)')
         self._parser.add_argument('--G', type=int, default=12, help='Victims Group')
         self._parser.add_argument('--T', type=int, default=6, help='Hurricane Season Count Month')
         self._parser.add_argument('--A', type=int, default=8, help='Number of Attribute')
@@ -27,7 +28,11 @@ class Arguments:
 
         # Fairness_switch
         self._parser.add_argument('--fair_sw_group', type=int, default=0, help='fairness')
-        self._parser.add_argument('--fair_sw_region', type=int, default=1, help='fairness')
+        self._parser.add_argument('--fair_sw_region', type=int, default=0, help='fairness')
+        self._parser.add_argument('--fair_sw_value', type=int, default=0, help='fairness')
+
+        # Depreciation rate
+        self._parser.add_argument('--dprate', type=int, default=1, help='fairness')
 
 
 

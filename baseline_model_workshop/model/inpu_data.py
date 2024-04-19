@@ -98,6 +98,17 @@ class input_data_class:
             self.u_p[p] = df_House_info.iloc[4][p+1]
 
 
+        self.O_p1 = np.zeros((args.P1))
+        self.S_p1 = np.zeros((args.P1))
+
+        df_House_info_p1 = pd.read_excel("data/House_Info_nostore.xlsx")
+
+        for p in range(args.P1):
+            self.O_p1[p] = df_House_info_p1.iloc[0][p+1]
+            self.S_p1[p] = df_House_info_p1.iloc[1][p+1]
+
+
+
         # ### ------------------ House_Attribute ------------------ ###
 
         self.A_H_flood = np.zeros((args.A,args.P))
@@ -110,6 +121,18 @@ class input_data_class:
             for p in range(args.P):
                 self.A_H_flood[a][p] = df_A_H_flood.iloc[a][p+1]
                 self.A_H_wind[a][p] = df_A_H_wind.iloc[a][p+1]
+
+
+        self.A_H_flood_p1 = np.zeros((args.A,args.P1))
+        self.A_H_wind_p1 = np.zeros((args.A,args.P1))
+
+        df_A_H_flood_p1 = pd.read_excel("data/House_Attribute_flood_nostore.xlsx")
+        df_A_H_wind_p1 = pd.read_excel("data/House_Attribute_wind_nostore.xlsx")
+
+        for a in range(args.A):
+            for p in range(args.P1):
+                self.A_H_flood_p1[a][p] = df_A_H_flood_p1.iloc[a][p+1]
+                self.A_H_wind_p1[a][p] = df_A_H_wind_p1.iloc[a][p+1]
 
 
         # ### ------------------Household weight ------------------ ###
@@ -141,5 +164,24 @@ class input_data_class:
         for w in range(args.W):
             self.Cap_w[w]  = df_Cap_w["Capacity"][w]
 
+        # ### ------------------Max Value of group ------------------ ###
 
-        # pdb.set_trace()
+        self.max_value_g = np.zeros((args.G))
+
+        for g in range(args.G):
+            
+            for p in range(args.P):
+                temp = 0
+                for a in range(args.A):
+                    temp = temp + self.A_H_flood[a][p]*self.Hd_weight[a][g]
+
+                if (temp>self.max_value_g[g]):
+                    self.max_value_g[g] = temp
+
+            for p in range(args.P1):
+                temp = 0
+                for a in range(args.A):
+                    temp = temp + self.A_H_flood_p1[a][p]*self.Hd_weight[a][g]
+                    
+                if (temp>self.max_value_g[g]):
+                    self.max_value_g[g] = temp

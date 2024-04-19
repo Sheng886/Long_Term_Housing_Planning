@@ -15,18 +15,18 @@ if __name__ == '__main__':
     input_data = inpu_data.input_data_class(args)
 
 
-    if(args.model == "avg"):
-        baseline_model_avg = baseline_avg.baseline_class(args,input_data)
-        x = baseline_model_avg.run(args)
+    # if(args.model == "avg"):
+    #     baseline_model_avg = baseline_avg.baseline_class(args,input_data)
+    #     x = baseline_model_avg.run(args)
 
-        print("avg end")
-        print("----------------")
-        baseline_model = baseline.baseline_class(args,input_data,x)
-        baseline_model.run(args)
+    #     print("avg end")
+    #     print("----------------")
+    #     baseline_model = baseline.baseline_class(args,input_data,x)
+    #     baseline_model.run(args)
         
-    else:
-        baseline_model = baseline.baseline_class(args,input_data)
-        baseline_model.run(args)
+    # else:
+    baseline_model = baseline.baseline_class(args,input_data)
+    baseline_model.run(args)
 
 
 

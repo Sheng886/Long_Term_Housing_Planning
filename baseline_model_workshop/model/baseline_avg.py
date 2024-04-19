@@ -28,17 +28,14 @@ class baseline_class():
 
         # First-stage
         self.x = self.model.addVars(args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='xwp')
-        self.diff_x = self.model.addVars(args.P, args.P, vtype=GRB.CONTINUOUS, name='qgt')
-        self.abs_x = self.model.addVars(args.P, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
-        
         # Second-stage
         self.v = self.model.addVars(args.W, args.P, args.T, lb=0.0, vtype=GRB.CONTINUOUS, name='vipt')
         self.f = self.model.addVars(args.W, args.J, args.P, args.G, args.T, lb=0.0, vtype=GRB.CONTINUOUS, name='fwjpgt')
         self.q = self.model.addVars(args.J, args.G, args.T, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
         self.s = self.model.addVars(args.I, args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='siwpt')
         self.r = self.model.addVars(args.W, args.P, lb=0.0, name='rwp')
-        self.diff = self.model.addVars(args.J, args.G, args.G, args.T, vtype=GRB.CONTINUOUS, name='qgt')
-        self.abs = self.model.addVars(args.J, args.G, args.G, args.T, lb=0.0, vtype=GRB.CONTINUOUS, name='qgt')
+
+        self.f_p1 = self.model.addVars(args.J, args.P1, args.G, args.T, lb=0.0, vtype=GRB.CONTINUOUS, name='fjpgt')
 
         # pdb.set_trace()
 
@@ -47,7 +44,9 @@ class baseline_class():
                                 +quicksum(args.s_factor*self.idata.CU_g[g]*self.q[j,g,t] for g in range(args.G) for t in range(args.T) for j in range(args.J))
                                 +quicksum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t] for w in range(args.W) for p in range(args.P) for t in range(args.T))
                                 +quicksum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
+                                +args.dprate*quicksum(self.idata.O_p[p]*self.x[w,p] for w in range(args.W) for p in range(args.P))
                                 -quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A))) 
+                                -quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g]*self.f_p1[j,p,g,t]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P1) for g in range(args.G) for t in range(args.T) for a in range(args.A)) 
                                 , GRB.MINIMIZE);
 
 
@@ -90,20 +89,13 @@ class baseline_class():
             for g in range(args.G):
                 for t in range(1,args.T):
                     for j in range(args.J):
-                        self.model.addConstr(quicksum(self.f[w,j,p,g,t] for w in range(args.W) for p in range(args.P)) + self.q[j,g,t] == self.avg_demand[j][g][t])
+                        self.model.addConstr(quicksum(self.f[w,j,p,g,t] for w in range(args.W) for p in range(args.P)) + quicksum(self.f_p1[j,p,g,t] for p in range(args.P1))  + self.q[j,g,t] == self.idata.demand[k][j][g][t])
 
 
-        # if(args.fair_sw == 1):
-        # # Fair Constraint (Shoratge)
-        #     for k in range(args.K):
-        #         for g1 in range(args.G):
-        #             for g2 in range(args.G):
-        #                 for t in range(1,args.T):
-        #                     self.model.addConstr(self.q[j,g1,t]*self.avg_demand[j][g2][t] - self.q[j,g2,t]*self.avg_demand[j][g1][t] == self.diff[j,g1,g2,t]*self.avg_demand[j][g1][t]*self.avg_demand[j][g2][t])
-        #                     self.model.addGenConstrAbs(self.abs[j,g1,g2,t], self.diff[j,g1,g2,t])
-        #                     self.model.addConstr(self.abs[j,g1,g2,t] <= args.fair)
-
-    
+        for k in range(args.K):
+            for p in range(args.P1):
+                for t in range(1,args.T):
+                    self.model.addConstr(quicksum(self.f_p1[j,p,g,t] for j in range(args.J) for p in range(args.P1)) <= self.idata.S_p1[p])
 
 
     def run(self,args):
