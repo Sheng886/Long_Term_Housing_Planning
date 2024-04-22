@@ -34,6 +34,9 @@ class Arguments:
         # Depreciation rate
         self._parser.add_argument('--dprate', type=int, default=1, help='fairness')
 
+        # real
+        self._parser.add_argument('--real', type=int, default=0, help='Approx Real Scenario')
+
 
 
         # Path

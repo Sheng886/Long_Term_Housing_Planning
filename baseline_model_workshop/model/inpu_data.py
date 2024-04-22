@@ -7,6 +7,7 @@ import math
 import pdb
 import os
 import os.path
+import random
 
 
 class input_data_class:
@@ -45,21 +46,40 @@ class input_data_class:
 
         
         self.demand = np.zeros((args.K,args.J,args.G,args.T))
-        for k in range(args.K):
-            for t in range(args.T):
-                count_temp = np.random.poisson(count_mean[t])
-                for j in range(args.J):
-                    demand_total = 0
-                    for count in range(count_temp):
-                        temp = int(np.random.normal(demand_mean[j], demand_std[j]))
-                        if(temp >= 0):
-                            demand_total = demand_total + temp
-                    for g in range(args.G):
-                        self.demand[k][j][g][t] = demand_total*group_percentage[j][g]
+
+        if(args.real == 1):
+            temp_year = np.random.choice(100,4)
+            temp_month = np.random.choice((1,5),4)
+            for y in temp_year:
+                for m in temp_month:
+                    temp_total_colum = np.random.choice((1,10),4)
+                    for s in temp_total_colum:
+                        for j in range(args.J):
+                            for g in range(args.G):
+                                    self.demand[y][j][g][m] = int(df_demand_mean_std.iloc[j][s+2]*group_percentage[j][g])
+
+        # np.save('demand_real.npy', self.demand)
+
+
+        else:
+            for k in range(args.K):
+                for t in range(args.T):
+                    count_temp = np.random.poisson(count_mean[t])
+                    for j in range(args.J):
+                        demand_total = 0
+                        for count in range(count_temp):
+                            temp = int(np.random.normal(demand_mean[j], demand_std[j]))
+                            if(temp >= 0):
+                                demand_total = demand_total + temp
+                        for g in range(args.G):
+                            self.demand[k][j][g][t] = demand_total*group_percentage[j][g]
 
         # np.save('demand.npy', self.demand)
 
-        self.demand = np.load('demand.npy')
+        if(args.real==0):
+            self.demand = np.load('demand.npy')
+        else:
+            self.demand = np.load('demand_real.npy')
 
 
         ### ------------------ Distance matrix ------------ ###

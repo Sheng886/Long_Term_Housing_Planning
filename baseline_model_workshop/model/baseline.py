@@ -58,6 +58,13 @@ class baseline_class():
                                 for k in range(args.K)), GRB.MINIMIZE);
 
         
+        
+        if(args.model == "avg"):
+            for w in range(args.W):
+                for p in range(args.P):
+                    self.model.addConstr(self.x[w,p] == xx[w,p].x)
+
+
         # Policy
         if(args.model == "perfect"):
             for w in range(args.W):
@@ -115,25 +122,6 @@ class baseline_class():
                     self.model.addConstr(quicksum(self.r[w,p,k] for w in range(args.W)) == self.idata.R_p[p]*(quicksum(self.x[w,p]-self.v[w,p,args.T-1,k] for w in range(args.W))))
 
         
-        if(args.model == "avg"):
-            self.avg_demand = np.zeros((args.J,args.G,args.T))
-            for j in range(args.J):
-                for g in range(args.G):
-                    for t in range(args.T):
-                        for k in range(args.K):
-                            self.avg_demand[j][g][t] = self.avg_demand[j][g][t] + self.idata.demand[k][j][g][t]
-
-            self.avg_demand = self.avg_demand/args.K
-
-            for j in range(args.J):
-                for g in range(args.G):
-                    for t in range(args.T):
-                        for k in range(args.K):
-                            self.idata.demand[k][j][g][t] = self.avg_demand[j][g][t]
-
-
-
-
 
         # Demand
         for k in range(args.K):
@@ -144,8 +132,7 @@ class baseline_class():
 
         for k in range(args.K):
             for p in range(args.P1):
-                for t in range(args.T):
-                    self.model.addConstr(quicksum(self.f_p1[j,p,g,t,k] for j in range(args.J) for g in range(args.G)) <= self.idata.S_p1[p])
+                self.model.addConstr(quicksum(self.f_p1[j,p,g,t,k] for j in range(args.J) for g in range(args.G) for t in range(args.T)) <= self.idata.S_p1[p])
         
 
 
@@ -295,7 +282,7 @@ class baseline_class():
                 for t in range(1,args.T):
                     for g in range(args.G):
                         G = sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k].x*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + sum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g]*self.f_p1[j,p,g,t,k].x*args.g_value for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
-                        percentage[t][g] = G/self.idata.max_value_g[g]
+                        percentage[t][g] = G/(self.idata.max_value_g[g]*args.g_value)
 
                 df = pd.DataFrame(percentage)
                 name = "{path}/{model}_value_demand_percentage_{k}.csv".format(path=os_path, model = args.model, k = str(k))
