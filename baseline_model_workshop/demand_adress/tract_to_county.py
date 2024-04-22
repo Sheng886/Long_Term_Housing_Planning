@@ -16,8 +16,10 @@ for count_name in county_names:
 
 # --------------------------------------------------------------------------------
 
+np.zeros((150,46,6))
 
-for i in range(10):
+
+for i in range(1,97):
     name = 'sel_storms_new_outputs_original/output_'+ str(i) + '.xlsx'
 
     df_output = pd.read_excel(name)

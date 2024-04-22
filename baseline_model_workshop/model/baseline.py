@@ -169,13 +169,14 @@ class baseline_class():
                 for g1 in range(args.G):
                     for g2 in range(args.G):
                         for t in range(1,args.T):
-                            G1 = quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g1]*self.f[w,j,p,g1,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g1]*self.f_p1[j,p,g1,t,k]*args.g_value for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
-                            
-                            G2 = quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g2]*self.f[w,j,p,g2,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g2]*self.f_p1[j,p,g2,t,k]*args.g_value for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
+                            if(sum(self.idata.demand[k][j][g1][t] for j in range(args.J)) >= 10e-5 and sum(self.idata.demand[k][j][g2][t] for j in range(args.J)) >= 10e-5):
+                                G1 = quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g1]*self.f[w,j,p,g1,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g1]*self.f_p1[j,p,g1,t,k]*args.g_value for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
+                                
+                                G2 = quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g2]*self.f[w,j,p,g2,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g2]*self.f_p1[j,p,g2,t,k]*args.g_value for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
 
-                            self.model.addConstr(G1/self.idata.max_value_g[g1] - G2/self.idata.max_value_g[g2] == self.diff_value[g1,g2,t,k])
-                            self.model.addConstr(self.abs_value[g1,g2,t,k] == gp.abs_(self.diff_value[g1,g2,t,k]))
-                            self.model.addConstr(self.abs_value[g1,g2,t,k] <= args.fair)
+                                self.model.addConstr(G1/(sum(self.idata.demand[k][j][g1][t] for j in range(args.J))*self.idata.max_value_g[g1]*args.g_value) - G2/(sum(self.idata.demand[k][j][g1][t] for j in range(args.J))*self.idata.max_value_g[g2]*args.g_value) == self.diff_value[g1,g2,t,k])
+                                self.model.addConstr(self.abs_value[g1,g2,t,k] == gp.abs_(self.diff_value[g1,g2,t,k]))
+                                self.model.addConstr(self.abs_value[g1,g2,t,k] <= args.fair)
 
 
     def run(self,args):
@@ -282,7 +283,7 @@ class baseline_class():
                 for t in range(1,args.T):
                     for g in range(args.G):
                         G = sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k].x*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + sum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g]*self.f_p1[j,p,g,t,k].x*args.g_value for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
-                        percentage[t][g] = G/(self.idata.max_value_g[g]*args.g_value)
+                        percentage[t][g] = G/(sum(self.idata.demand[k][j][g][t] for j in range(args.J))*self.idata.max_value_g[g]*args.g_value)
 
                 df = pd.DataFrame(percentage)
                 name = "{path}/{model}_value_demand_percentage_{k}.csv".format(path=os_path, model = args.model, k = str(k))
