@@ -282,8 +282,9 @@ class baseline_class():
                 percentage = np.zeros((args.T,args.G))
                 for t in range(1,args.T):
                     for g in range(args.G):
-                        G = sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k].x*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + sum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g]*self.f_p1[j,p,g,t,k].x*args.g_value for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
-                        percentage[t][g] = G/(sum(self.idata.demand[k][j][g][t] for j in range(args.J))*self.idata.max_value_g[g]*args.g_value)
+                        if(sum(self.idata.demand[k][j][g][t] for j in range(args.J)) >= 10e-5):
+                            G = sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k].x*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for a in range(args.A)) + sum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g]*self.f_p1[j,p,g,t,k].x*args.g_value for j in range(args.J) for p in range(args.P1)for a in range(args.A)) 
+                            percentage[t][g] = G/(sum(self.idata.demand[k][j][g][t] for j in range(args.J))*self.idata.max_value_g[g]*args.g_value)
 
                 df = pd.DataFrame(percentage)
                 name = "{path}/{model}_value_demand_percentage_{k}.csv".format(path=os_path, model = args.model, k = str(k))

@@ -15,6 +15,7 @@ library(ggpattern)
 library("rnaturalearth")
 library("rnaturalearthdata")
 library("sf")
+library("MAP")
 ```
 
 ```{r}
@@ -23,9 +24,9 @@ Used_time = read.csv("dataset.csv")
 ggplot(Used_time, aes(x = Time, y = Inventory)) +
   geom_line() +
   geom_point() + 
-  scale_y_continuous(limits = c(0, 12000))
+  scale_y_continuous(limits = c(0, 3000))
 
-ggsave("Used_time_02.png")
+ggsave("Used_time_2.png")
 ```
 
 ```{r}

@@ -76,10 +76,10 @@ class input_data_class:
 
         # np.save('demand.npy', self.demand)
 
-        if(args.real==0):
-            self.demand = np.load('demand.npy')
-        else:
-            self.demand = np.load('demand_real.npy')
+        # if(args.real==0):
+        #     self.demand = np.load('demand.npy')
+        # else:
+        #     self.demand = np.load('demand_real.npy')
 
 
         ### ------------------ Distance matrix ------------ ###
