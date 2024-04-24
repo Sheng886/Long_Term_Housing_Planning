@@ -26,6 +26,9 @@ class Arguments:
         # Shortage Factor
         self._parser.add_argument('--s_factor', type=float, default=1, help='Shortage Factor')
 
+        # value Factor
+        self._parser.add_argument('--value_factor', type=float, default=1, help='value Factor')
+
         # Fairness_switch
         self._parser.add_argument('--fair_sw_group', type=int, default=0, help='fairness')
         self._parser.add_argument('--fair_sw_region', type=int, default=0, help='fairness')

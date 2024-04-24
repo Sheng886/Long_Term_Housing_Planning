@@ -52,8 +52,8 @@ class baseline_class():
                                 +quicksum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t,k] for w in range(args.W) for p in range(args.P) for t in range(args.T))
                                 +quicksum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p,k] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                 +args.dprate*quicksum(self.idata.O_p[p]*self.x[w,p] for w in range(args.W) for p in range(args.P))
-                                -quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A))) 
-                                -quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g]*self.f_p1[j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P1) for g in range(args.G) for t in range(args.T) for a in range(args.A)) 
+                                -args.value_facotr*quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A))) 
+                                -args.value_facotr*quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g]*self.f_p1[j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P1) for g in range(args.G) for t in range(args.T) for a in range(args.A)) 
                                 for k in range(args.K)), GRB.MINIMIZE);
 
         

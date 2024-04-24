@@ -53,8 +53,8 @@ class baseline_class():
                                 +quicksum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t,k] for w in range(args.W) for p in range(args.P) for t in range(args.T))
                                 +quicksum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p,k] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                 +args.dprate*quicksum(self.idata.O_p[p]*self.x[w,p] for w in range(args.W) for p in range(args.P))
-                                -quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A))) 
-                                -quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g]*self.f_p1[j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P1) for g in range(args.G) for t in range(args.T) for a in range(args.A)) 
+                                -args.value_factor*quicksum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A))) 
+                                -args.value_factor*quicksum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g]*self.f_p1[j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P1) for g in range(args.G) for t in range(args.T) for a in range(args.A)) 
                                 for k in range(args.K)), GRB.MINIMIZE);
 
         
@@ -181,7 +181,7 @@ class baseline_class():
 
     def run(self,args):
 
-        os_path = "result_temp/{model}_{k}_FR{a}_FG{b}_FV{c}_SF{d}".format(model = args.model, k = str(args.K), a=str(args.fair_sw_group),b=str(args.fair_sw_region),c=str(args.fair_sw_value),d=str(int(args.s_factor*10)))
+        os_path = "result_temp/{model}_{k}_FR{a}_FG{b}_FV{c}_SF{d}_VF{e}".format(model = args.model, k = str(args.K), a=str(args.fair_sw_group),b=str(args.fair_sw_region),c=str(args.fair_sw_value),d=str(int(args.s_factor*10)),e=str(int(args.value_factor*10)))
         os.mkdir(os_path) 
 
         self.model.update()
@@ -241,12 +241,12 @@ class baseline_class():
         holding_cost_total = sum(self.idata.CH_p[p]*self.idata.O_p[p]*self.v[w,p,t,k].x for w in range(args.W) for p in range(args.P) for t in range(args.T) for k in range(args.K))/args.K
         unmet_cost_total = sum(args.s_factor*self.idata.CU_g[g]*self.q[j,g,t,k].x for g in range(args.G) for t in range(args.T) for k in range(args.K) for j in range(args.J))/args.K
         replenish_cost_total = sum((self.idata.O_p[p] + self.idata.iw_dis[i][w]*args.t_cost)*self.s[i,w,p,k].x for i in range(args.I) for w in range(args.W) for p in range(args.P)for k in range(args.K))/args.K
-        group_value_cost = sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k].x*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A) for k in range(args.K))/args.K
-        group_value_cost = group_value_cost + sum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g]*self.f_p1[j,p,g,t,k].x*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P1) for g in range(args.G) for t in range(args.T) for a in range(args.A) for k in range(args.K))/args.K
+        group_value_cost = args.value_factor*sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k].x*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for g in range(args.G) for t in range(args.T) for a in range(args.A) for k in range(args.K))/args.K
+        group_value_cost = group_value_cost + args.value_factor*sum(self.idata.A_H_flood_p1[a][p]*self.idata.Hd_weight[a][g]*self.f_p1[j,p,g,t,k].x*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P1) for g in range(args.G) for t in range(args.T) for a in range(args.A) for k in range(args.K))/args.K
         
         value_group = np.zeros((args.G))
         for g in range(args.G):
-            value_group = sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for t in range(args.T) for a in range(args.A) for k in range(args.K))
+            value_group = args.value_factor*sum(self.idata.A_H_flood[a][p]*self.idata.Hd_weight[a][g]*self.f[w,j,p,g,t,k]*args.g_value for w in range(args.W) for j in range(args.J) for p in range(args.P) for t in range(args.T) for a in range(args.A) for k in range(args.K))
 
 
         if(args.model == "baseline"):
