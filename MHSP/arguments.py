@@ -4,42 +4,23 @@ class Arguments:
     def __init__(self):
         self._parser = argparse.ArgumentParser(description='Time_index_model')
 
-        # model
-        self._parser.add_argument('--model', type=str, default="lead", help='Number of Supplier')
 
         # Number of Elements in the Set
         self._parser.add_argument('--I', type=int, default=7, help='Number of Supplier')
         self._parser.add_argument('--W', type=int, default=2, help='Number of Staging Area')
-        self._parser.add_argument('--J', type=int, default=10, help='Number of Study Region')
+        self._parser.add_argument('--J', type=int, default=8, help='Number of Study Region')
         self._parser.add_argument('--K', type=int, default=10, help='Scenario')
-        self._parser.add_argument('--P', type=int, default=2, help='Housing Type')
-        self._parser.add_argument('--P1', type=int, default=2, help='Housing Type (no store)')
-        self._parser.add_argument('--G', type=int, default=2, help='Victims Group')
+        self._parser.add_argument('--P', type=int, default=4, help='Housing Type')
+        self._parser.add_argument('--G', type=int, default=6, help='Victims Group')
         self._parser.add_argument('--T', type=int, default=6, help='Hurricane Season Count Month')
         self._parser.add_argument('--A', type=int, default=8, help='Number of Attribute')
 
         # Parameter
         self._parser.add_argument('--t_cost', type=int, default=10, help='Transportation cost')
         self._parser.add_argument('--g_value', type=int, default=5000, help='Mean of Group Value')
-        self._parser.add_argument('--fair', type=float, default=0.2, help='Fairness Level')
 
-        # Shortage Factor
-        self._parser.add_argument('--s_factor', type=float, default=1, help='Shortage Factor')
-
-        # value Factor
-        self._parser.add_argument('--value_factor', type=float, default=1, help='value Factor')
-
-        # Fairness_switch
-        self._parser.add_argument('--fair_sw_group', type=int, default=0, help='fairness')
-        self._parser.add_argument('--fair_sw_region', type=int, default=0, help='fairness')
-        self._parser.add_argument('--fair_sw_value', type=int, default=0, help='fairness')
-
-        # Depreciation rate
-        self._parser.add_argument('--dprate', type=int, default=1, help='fairness')
-
-        # real
-        self._parser.add_argument('--real', type=int, default=0, help='Approx Real Scenario')
-
+        # Scen Factor
+        self._parser.add_argument('--s_factor', type=int, default=1, help='Shortage Factor')
 
 
         # Path

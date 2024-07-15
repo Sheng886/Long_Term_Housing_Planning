@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import gurobipy as gp
 from gurobipy import GRB
-from model import baseline, inpu_data, baseline_perfect,baseline_avg
+from model import baseline, inpu_data, baseline_perfect,baseline_avg,baseline_Lead
 import time
 
 
@@ -23,7 +23,11 @@ if __name__ == '__main__':
         print("----------------")
         baseline_model = baseline.baseline_class(args,input_data,x)
         baseline_model.run(args)
-        
+
+    elif(args.model == "lead"):
+        baseline_model = baseline_Lead.baseline_class(args,input_data)
+        x = baseline_model.run(args)
+
     else:
         baseline_model = baseline.baseline_class(args,input_data)
         baseline_model.run(args)

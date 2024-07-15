@@ -1,0 +1,33 @@
+---
+title: "Regression"
+output: html_document
+date: "2022-09-22"
+---
+
+## Package
+
+```{r}
+library(scico)
+library(sf)
+library(ncdf4)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork)
+library("readxl")
+library(ggpattern)
+library(scales)
+library(latex2exp)
+```
+
+```{r}
+Used_time = read.csv("Used_time2.csv")
+
+ggplot(Used_time, aes(x = Time, y = Inventory)) +
+  geom_line() +
+  geom_point() 
+
+ggsave("Used_time.png")
+```
+```
+
