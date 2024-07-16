@@ -9,10 +9,10 @@ class Arguments:
         self._parser.add_argument('--I', type=int, default=7, help='Number of Supplier')
         self._parser.add_argument('--W', type=int, default=2, help='Number of Staging Area')
         self._parser.add_argument('--J', type=int, default=8, help='Number of Study Region')
-        self._parser.add_argument('--K', type=int, default=10, help='Scenario')
+        self._parser.add_argument('--K', type=int, default=2, help='Scenario')
         self._parser.add_argument('--P', type=int, default=4, help='Housing Type')
         self._parser.add_argument('--G', type=int, default=6, help='Victims Group')
-        self._parser.add_argument('--T', type=int, default=6, help='Hurricane Season Count Month')
+        self._parser.add_argument('--T', type=int, default=6, help='number of node in a scen path')
         self._parser.add_argument('--A', type=int, default=8, help='Number of Attribute')
 
         # Parameter
@@ -21,6 +21,10 @@ class Arguments:
 
         # Scen Factor
         self._parser.add_argument('--s_factor', type=int, default=1, help='Shortage Factor')
+
+        # Tree
+        self._parser.add_argument('--n', type=int, default=7, help='number of node in tree')
+        self._parser.add_argument('--m', type=int, default=2, help='number of node in a scen path')
 
 
         # Path
