@@ -3,25 +3,28 @@ import pdb
 from itertools import product
 
 
-# Each black sample path is a array, for example [100,0,0,0,100,0]
+class Scenariopath_black:
+    def __init__(self, demand):
+        self.demand = demand
+
 
 class ScenarioNode_red:
     def __init__(self, name, stage, parent=None, root=False):
         self.stage = stage
         self.name = name
         self.parent = parent
-        self.children_red_path = []
-        self.children_black = []
+        self.children_red = []
+        self.children_blackpath = []
         self.prob2Children_red = []
         self.prob2Children_black = []
         self.root = root
 
     def add_child_red(self, child, prob2child):
-        self.children_red_path.append(child)
+        self.children_red.append(child)
         self.prob2Children_red.append(prob2child)
 
     def add_child_black(self, child, prob2child):
-        self.children_black.append(child)
+        self.children_blackpath.append(child)
         self.prob2Children_black.append(prob2child)
 
 class ScenarioTree:
@@ -54,12 +57,19 @@ class ScenarioTree:
     def _build_tree_black(self,scenario_matrix,scenario_prob):
         
         for indx,node in enumerate(self.node_all):
-            for sce in scenario_matrix[indx]:
-                self.node_all[indx].add_child_black(sce,scenario_prob[indx][sce])
+            for indx2,sce in enumerate(scenario_matrix[indx]):
+                temp_path = Scenariopath_black(sce)
+                self.node_all[indx].add_child_black(temp_path,scenario_prob[indx][indx2])
+                
 
     def print_tree_red(self):
         for indx,node in enumerate(self.node_all):
             print(f"Node {indx}: Stage {node.stage}, Name {node.name}, Parent {node.parent}, Child_red {node.prob2Children_red}")
+
+    def print_tree_sce(self):
+        for indx,node in enumerate(self.node_all):
+            for month in node.children_blackpath:
+                print(f"Node {indx}: Scen {month.demand}")
 
 
 
