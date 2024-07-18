@@ -1,4 +1,4 @@
-from model import func
+from model import func, scenariotree
 from arguments import Arguments
 import numpy as np
 import pandas as pd
@@ -14,32 +14,37 @@ class input_data_class:
 
         ### ------------------ demand ------------------------- ###
         
-        self.demand = np.zeros((args.K,args.J,args.G,args.T))
-        for k in range(args.K):
-            for j in range(args.J):
-                a = 25
-                b = 0
-                for g in range(args.G):
-                    # if(g == 5):
-                    #     a = 1200
-                    #     b = 1000
-                    # elif(g == 3):
-                    #     a = 1000
-                    #     b = 800
-                    # elif(g == 4):
-                    #     a = 800
-                    #     b = 600
-                    # elif(g == 2):
-                    #     a = 600
-                    #     b = 400
-                    # elif(g == 0):
-                    #     a = 400
-                    #     b = 200
-                    # elif(g == 1):
-                    #     a = 200
-                    #     b = 0
-                    for t in range(args.T):
-                        self.demand[k][j][g][t] = np.random.randint(b,a)
+        df_tree = pd.read_excel("scen_tree/tree_distmatrix.xlsx")
+        df_tree = df_tree.iloc[: , 1:]
+        tree_adj_matrix = df_tree.values.tolist()
+
+        df_scen1 = pd.read_excel("scen_tree/tree_scen1.xlsx")
+        df_scen2 = pd.read_excel("scen_tree/tree_scen2.xlsx")
+
+        tree_pr = df_scen1["Pr"].values.tolist()
+        temp = np.array(tree_pr)
+        reshaped_temp = temp.reshape(args.n, args.K)
+        tree_pr = reshaped_temp.tolist()
+
+
+        tree_demand1 = df_scen1.iloc[: , 3:].values.tolist()
+        temp = np.array(tree_demand1)
+        reshaped_temp = temp.reshape(args.n, args.K, args.T)
+        tree_demand1 = reshaped_temp.tolist()
+
+        tree_demand2 = df_scen2.iloc[: , 3:].values.tolist()
+        temp = np.array(tree_demand2)
+        reshaped_temp = temp.reshape(args.n, args.K, args.T)
+        tree_demand2 = reshaped_temp.tolist()
+
+        self.tree = scenariotree.ScenarioTree(args.n)
+        self.tree._build_tree_red(tree_adj_matrix)
+        self.tree._build_tree_black(tree_demand1,tree_demand2,tree_pr)
+        # self.tree.print_tree_sce()
+        # self.tree.print_tree_red()
+        
+
+        # pdb.set_trace()
 
 
         ### ------------------ Distance matrix ------------ ###
@@ -62,47 +67,29 @@ class input_data_class:
 
         # ### ------------------ House Information ------------------ ###
 
-        self.I_p = np.zeros((args.P))
-        self.CH_p = np.zeros((args.P))
+        self.P_p = np.zeros((args.P))
         self.O_p = np.zeros((args.P))
         self.R_p = np.zeros((args.P))
-        self.u_p = np.zeros((args.P))
+
 
         df_House_info = pd.read_excel("data/House_Info.xlsx")
 
         for p in range(args.P):
-            self.I_p[p] = df_House_info.iloc[0][p+1]
-            self.CH_p[p] = df_House_info.iloc[1][p+1]
-            self.O_p[p] = df_House_info.iloc[2][p+1]
-            self.R_p[p] = df_House_info.iloc[3][p+1]
-            self.u_p[p] = df_House_info.iloc[4][p+1]
+            self.P_p[p] = df_House_info.iloc[0][p+1]
+            self.O_p[p] = df_House_info.iloc[1][p+1]
+            self.R_p[p] = df_House_info.iloc[2][p+1]
 
 
-        # ### ------------------ House_Attribute ------------------ ###
-
-        self.A_H_flood = np.zeros((args.A,args.P))
-        self.A_H_wind = np.zeros((args.A,args.P))
-
-        df_A_H_flood = pd.read_excel("data/House_Attribute_flood.xlsx")
-        df_A_H_wind = pd.read_excel("data/House_Attribute_wind.xlsx")
-
-        for a in range(args.A):
-            for p in range(args.P):
-                self.A_H_flood[a][p] = df_A_H_flood.iloc[a][p+1]
-                self.A_H_wind[a][p] = df_A_H_wind.iloc[a][p+1]
-
-
-        # ### ------------------Household weight ------------------ ###
-
-        self.Hd_weight = np.zeros((args.A,args.G))
-
-        df_Hd_weight = pd.read_excel("data/Victim_Weight.xlsx")
-
-        for a in range(args.A):
-            for g in range(args.G):
-                self.Hd_weight[a][g] = df_Hd_weight.iloc[a][g+1]
 
         
+
+        # ### ------------------Supply ------------------ ###
+        self.B_i = np.zeros((args.I))
+
+        df_I = pd.read_excel("data/Supply_Info.xlsx")
+
+        for i in range(args.I):
+            self.B_i[i]  = df_I["Production"][i]
 
         # ### ------------------Unmet Penalty Parameter ------------------ ###
         self.CU_g = np.zeros((args.G))
@@ -115,11 +102,22 @@ class input_data_class:
 
         # ### ------------------Staging Area Capacity ------------------ ###
         self.Cap_w = np.zeros((args.W))
+        self.E_w = np.zeros((args.W))
 
         df_Cap_w = pd.read_excel("data/Staging_Area_info.xlsx")
 
         for w in range(args.W):
             self.Cap_w[w]  = df_Cap_w["Capacity"][w]
+            self.E_w[w] = df_Cap_w["Etend_price"][w]
+
+
+        # ### ------------------Study Region ------------------ ###
+        self.J_pro = np.zeros((args.J))
+
+        df_j_pro = pd.read_excel("scen_tree/region_prob.xlsx")
+
+        for j in range(args.J):
+            self.J_pro[j] = df_j_pro.iloc[0][j]
 
 
         # pdb.set_trace()
