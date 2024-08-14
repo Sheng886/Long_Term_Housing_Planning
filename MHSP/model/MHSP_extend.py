@@ -40,8 +40,8 @@ class baseline_class():
         self.model.setObjective(quicksum(self.tree[n].prob_to_node*(quicksum(self.idata.E_w[w]*self.y[n,w] for w in range(args.W)) 
                                                                   + quicksum(self.idata.O_p[p]*(self.x[n,w,p] - self.idata.R_p[p]*self.z[n,w,p]) for w in range(args.W) for p in range(args.P))
                                                                   + quicksum(self.tree[n].prob2Children_black[k]*(quicksum(self.idata.O_p[p]*self.aak[n,k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[n,k,w,p] for w in range(args.W) for p in range(args.P))) 
-                                                                            + quicksum(quicksum(self.idata.O_p[p]*self.ak[n,k,t,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P)) for t in range(args.T+1)
-                                                                                      +quicksum(self.idata.CU_g[g]*self.sk[n,k,j,g] for j in range(args.J) for g in range(args.G)) for t in range(args.T+1)) for k in range(args.K))) 
+                                                                            + quicksum(quicksum(self.idata.O_p[p]*self.ak[n,k,t,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
+                                                                                      +quicksum(self.idata.CU_g[g]*self.sk[n,k,t,j,g] for j in range(args.J) for g in range(args.G)) for t in range(args.T+1)) for k in range(args.K))) 
                                 for n in range(args.n)), GRB.MINIMIZE);
 
 
@@ -105,8 +105,8 @@ class baseline_class():
                 for t in range(1,args.T+1):
                     for w in range(args.W):
                         for p in range(args.P):
-                            if(t - 1 > 0):
-                                self.model.addConstr(self.vk[n,k,t-1,w,p] + quicksum(self.ak[n,k,t-1,i,w,p] for i in range(args.I)) == self.vk[n,k,t,w,p] + quicksum(self.fk[n,k,t,w,j,p,g] for j in range(args.J) for g in range(args.G)))
+                            if(t -self.idata.P_p[p] > 0):
+                                self.model.addConstr(self.vk[n,k,t-1,w,p] + quicksum(self.ak[n,k,t-self.idata.P_p[p],i,w,p] for i in range(args.I)) == self.vk[n,k,t,w,p] + quicksum(self.fk[n,k,t,w,j,p,g] for j in range(args.J) for g in range(args.G)))
                             else:
                                 self.model.addConstr(self.vk[n,k,t-1,w,p]  == self.vk[n,k,t,w,p] + quicksum(self.fk[n,k,t,w,j,p,g] for j in range(args.J) for g in range(args.G)))
 
@@ -125,7 +125,7 @@ class baseline_class():
         for n in range(args.n):
             for k in range(args.K):
                 for w in range(args.W):
-                    for g in range(args.G):
+                    for p in range(args.P):
                         self.model.addConstr(self.vk[n,k,args.T,w,p] + self.aak[n,k,w,p] + self.bbk[n,k,w,p] == self.v[n,w,p])
 
                             

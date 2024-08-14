@@ -15,6 +15,7 @@ if __name__ == '__main__':
 
     input_data = inpu_data.input_data_class(args)
     MHSP_extend = MHSP_extend.baseline_class(args, input_data)
+    MHSP_extend.run(args)
 
 
 
