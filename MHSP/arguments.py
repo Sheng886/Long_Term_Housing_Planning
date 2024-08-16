@@ -14,6 +14,8 @@ class Arguments:
         self._parser.add_argument('--G', type=int, default=2, help='Victims Group')
         self._parser.add_argument('--T', type=int, default=6, help='number of node in a scen path')
         self._parser.add_argument('--A', type=int, default=8, help='Number of Attribute')
+        self._parser.add_argument('--m', type=int, default=3, help='Number of stage')
+        self._parser.add_argument('--state', type=int, default=2, help='state')
 
         # Parameter
         self._parser.add_argument('--t_cost', type=int, default=10, help='Transportation cost')

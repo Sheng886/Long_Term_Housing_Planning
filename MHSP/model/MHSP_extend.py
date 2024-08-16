@@ -39,9 +39,9 @@ class baseline_class():
         # Objective
         self.model.setObjective(quicksum(self.tree[n].prob_to_node*(quicksum(self.idata.E_w[w]*self.y[n,w] for w in range(args.W)) 
                                                                   + quicksum(self.idata.O_p[p]*(self.x[n,w,p] - self.idata.R_p[p]*self.z[n,w,p]) for w in range(args.W) for p in range(args.P))
-                                                                  + quicksum(self.tree[n].prob2Children_black[k]*(quicksum(self.idata.O_p[p]*self.aak[n,k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[n,k,w,p] for w in range(args.W) for p in range(args.P))) 
-                                                                            + quicksum(quicksum(self.idata.O_p[p]*self.ak[n,k,t,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
-                                                                                      +quicksum(self.idata.CU_g[g]*self.sk[n,k,t,j,g] for j in range(args.J) for g in range(args.G)) for t in range(args.T+1)) for k in range(args.K))) 
+                                                                  + quicksum(self.tree[n].prob2Children_black[k]*(quicksum(self.idata.O_p[p]*self.aak[n,k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[n,k,w,p] for w in range(args.W) for p in range(args.P)) 
+                                                                                                               + quicksum(quicksum(self.idata.O_p[p]*self.ak[n,k,t,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
+                                                                                                               + quicksum(self.idata.CU_g[g]*self.sk[n,k,t,j,g] for j in range(args.J) for g in range(args.G)) for t in range(args.T+1))) for k in range(args.K))) 
                                 for n in range(args.n)), GRB.MINIMIZE);
 
 
@@ -78,11 +78,13 @@ class baseline_class():
                         self.model.addConstr(self.vk[n,k,0,w,p] == self.v[n,w,p])
 
 
+
         # Initial Production Capacity Occupied
         for n in range(args.n):
             for k in range(args.K):
                 for i in range(args.I):
                     self.model.addConstr(self.bk[n,k,0,i] == quicksum(self.ak[n,k,0,i,w,p] for p in range(args.P) for w in range(args.W)))
+
 
 
         # Production Leadtime (assume 1 month lead time)
@@ -98,6 +100,15 @@ class baseline_class():
                 for t in range(args.T+1):
                     for i in range(args.I):
                          self.model.addConstr(self.bk[n,k,t,i] <= self.idata.B_i[i])
+
+
+        # Staging Area Constraints
+        for n in range(args.n):
+            for k in range(args.K):
+                for t in range(args.T+1):
+                    for w in range(args.W):
+                        self.model.addConstr(quicksum(self.vk[n,k,t,w,p] for p in range(args.P)) <= self.u[n,w])
+
 
         # Delviery Flow
         for n in range(args.n):
