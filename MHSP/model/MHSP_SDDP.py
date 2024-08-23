@@ -10,10 +10,12 @@ import pdb
 class StageProblem:
     """A data structure that keeps stage-wise problems"""
     
-    def __init__(self, args, input_data, m, last_stage=False, stage0=False):
+    def __init__(self, args, input_data, state, stage, last_stage=False, stage0=False):
 
         self.args = args
         self.idata = input_data
+        self.state = state
+        self.stage = stage
         
         self.model = gp.Model(f"Stage_{t}_model")
         # Stage variable
@@ -33,7 +35,7 @@ class StageProblem:
         self.aak = self.model.addVars(args.K, args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='aaktwp')
         self.bbk = self.model.addVars(args.K, args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='bbktwp')
         if(last_stage == False):
-            self.theta = self.model.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name='theta')
+            self.theta = self.model.addVars(args.N, lb=0.0, vtype=GRB.CONTINUOUS, name='theta')
 
 
 
@@ -45,7 +47,7 @@ class StageProblem:
                                   + (1/args.K)*quicksum(quicksum(self.idata.O_p[p]*self.aak[k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
                                                       + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,t,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                                                 + quicksum(self.idata.CU_g[g]*self.sk[n,k,t,j,g] for j in range(args.J) for g in range(args.G)) for t in range(args.T+1)) for k in range(args.K))
-                                  + self.theta 
+                                  + quicksum(self.idata.MC_tran_matrix[state][n]*self.theta[n] for n in range(args.N)) 
                                  , GRB.MINIMIZE);
         else:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[n] for w in range(args.W)) 
@@ -149,9 +151,6 @@ class StageProblem:
                 for p in range(args.P):
                     self.model.addConstr(self.vk[k,args.T,w,p] + self.aak[k,w,p] + self.bbk[k,w,p] == self.v[w,p])
 
-    def addcut:
-
-
 
     def run(self,args,n,u,v,demand):
 
@@ -179,6 +178,9 @@ class StageProblem:
         self.model.reset()
         self.model.setParam("OutputFlag", 0)
         self.model.optimize()
+
+
+        return self.u,self.v
 
 
         pi_b = np.zeros((args.W))
@@ -219,4 +221,6 @@ class solve_SDDP:
     def __init__(self, args, input_data, m):
 
         self.args = args
-        self.stage = [StageProblem(args,input_data,0,stage0=True) for t in range(args.m-2)] + [StageProblem(args,input_data,t) for t in range(1,args.m-1)] + [StageProblem(args.m-1, last_stage = True)];
+        self.stage_root = StageProblem(args,input_data,0,0,stage0=True)
+        self.stage = [[StageProblem(args,input_data,n,t+1,stage0=True) for n in range(args.N)] for in range(args.T-1)] 
+        self.stage_leaf = [StageProblem(args,input_data,n,args.T,last_stage=True) for n in range(args.N)];

@@ -55,7 +55,7 @@ class input_data_class:
 
         df_MC = pd.read_excel("scen_tree/MC.xlsx")
         df_MC = df_MC.iloc[: , 1:]
-        MC_tran_matrix = df_MC.values.tolist()
+        self.MC_tran_matrix = df_MC.values.tolist()
 
         df_month_par = pd.read_excel("scen_tree/Hurricane_month.xlsx")
         df_month_par = df_month_par.iloc[: , 1:]
