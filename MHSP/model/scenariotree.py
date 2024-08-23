@@ -3,14 +3,11 @@ import pdb
 from itertools import product
 
 
-class Scenariopath_black:
-    def __init__(self, demand1,demand2):
-        self.demand = [demand1,demand2]
-
 
 class ScenarioNode_red:
-    def __init__(self, name, stage, parent=None, root=False, to_node=1):
+    def __init__(self, name, state, stage, demand, parent=None, root=False, to_node=1):
         self.stage = stage
+        self.state = state
         self.name = name
         self.parent = parent
         self.prob_to_node = to_node
@@ -19,6 +16,7 @@ class ScenarioNode_red:
         self.prob2Children_red = []
         self.prob2Children_black = []
         self.root = root
+        self.demand = demand
 
     def add_child_red(self, child, prob2child):
         self.children_red.append(child)
@@ -30,48 +28,47 @@ class ScenarioNode_red:
 
 
 class ScenarioTree:
-    def __init__(self, node_num):
+    def __init__(self, node_num, demand_root):
 
         self.node_all = [None for _ in range(node_num)]
-        self.node_all[0] = ScenarioNode_red(name="Root (s=0, n=0)", stage=0, root=True)
+        self.node_all[0] = ScenarioNode_red(name="Root (t=0, n=1)",state=1, stage=0, root=True, demand=demand_root)
 
-    def _build_tree_red(self,Ad_matrix):
+
+    def _build_tree_red(self,args, MC_tran, demand):
         
         queue = []
         queue.append(0)
-        current_stage = 0
+        current_count = 0
+
         while(queue):
 
             node = queue[0]
 
-            for child_node,check in enumerate(Ad_matrix[node]):
-                if(check != 0):
-                    queue.append(child_node)
+            for n in range(args.N):
+                current_count += 1
+                stage_temp = self.node_all[node].stage + 1
 
-                    current_stage = self.node_all[node].stage + 1
-                    name = f"s={current_stage},n={child_node}"
-                    temp_node = ScenarioNode_red(name=name, stage=current_stage, parent=node,to_node=self.node_all[node].prob_to_node*Ad_matrix[node][child_node])
-                    self.node_all[node].add_child_red(child_node,Ad_matrix[node][child_node])
-                    self.node_all[child_node] = temp_node
+                if(stage_temp < args.T):
+                    queue.append(current_count)
+                    
+
+                self.node_all[node].add_child_red(current_count,MC_tran[self.node_all[node].state][n])
+                name = f"t={stage_temp},n={n}"
+                temp_node = ScenarioNode_red(name=name,state=n, stage=stage_temp, parent=node,to_node=self.node_all[node].prob_to_node*MC_tran[self.node_all[node].state][n], demand=demand[stage_temp-1][n])
+                self.node_all[current_count] = temp_node
 
             queue.pop(0)
-
-    def _build_tree_black(self,scenario_matrix1,scenario_matrix2,scenario_prob):
-        
-        for indx,node in enumerate(self.node_all):
-            for indx2,sce in enumerate(scenario_matrix1[indx]):
-                temp_path = Scenariopath_black(sce,scenario_matrix2[indx][indx2])
-                self.node_all[indx].add_child_black(temp_path,scenario_prob[indx][indx2])
+            
                 
 
     def print_tree_red(self):
         for indx,node in enumerate(self.node_all):
-            print(f"Node {indx}: Stage {node.stage}, Name {node.name}, Parent {node.parent}, Child_red {node.prob2Children_red}, Prob_to_node {node.prob_to_node}")
+            print(f"Node {indx}: Stage {node.stage}, State {node.state}, Name {node.name}, Parent {node.parent}, Child_red {node.prob2Children_red}, Prob_to_node {node.prob_to_node}")
 
     def print_tree_sce(self):
         for indx,node in enumerate(self.node_all):
-            for month in node.children_blackpath:
-                print(f"Node {indx}: Scen {month.demand}")
+            print(f"Node {indx}: State {node.state}:")
+            print(node.demand)
 
 
 

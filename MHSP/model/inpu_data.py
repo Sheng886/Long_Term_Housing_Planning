@@ -12,39 +12,80 @@ import os.path
 class input_data_class:
     def __init__(self, args):
 
-        ### ------------------ demand ------------------------- ###
+        temp = 1
+        for t in range(args.T):
+            temp += args.N**(t+1)
+        args.TN = temp
+
+        # ### ------------------ demand ------------------------- ###
         
-        df_tree = pd.read_excel("scen_tree/tree_distmatrix.xlsx")
-        df_tree = df_tree.iloc[: , 1:]
-        tree_adj_matrix = df_tree.values.tolist()
+        # df_tree = pd.read_excel("scen_tree/tree_distmatrix.xlsx")
+        # df_tree = df_tree.iloc[: , 1:]
+        # tree_adj_matrix = df_tree.values.tolist()
 
-        df_scen1 = pd.read_excel("scen_tree/tree_scen1.xlsx")
-        df_scen2 = pd.read_excel("scen_tree/tree_scen2.xlsx")
+        # df_scen1 = pd.read_excel("scen_tree/tree_scen1.xlsx")
+        # df_scen2 = pd.read_excel("scen_tree/tree_scen2.xlsx")
 
-        tree_pr = df_scen1["Pr"].values.tolist()
-        temp = np.array(tree_pr)
-        reshaped_temp = temp.reshape(args.n, args.K)
-        tree_pr = reshaped_temp.tolist()
+        # tree_pr = df_scen1["Pr"].values.tolist()
+        # temp = np.array(tree_pr)
+        # reshaped_temp = temp.reshape(args.TN, args.K)
+        # tree_pr = reshaped_temp.tolist()
 
 
-        tree_demand1 = df_scen1.iloc[: , 3:].values.tolist()
-        temp = np.array(tree_demand1)
-        reshaped_temp = temp.reshape(args.n, args.K, args.T)
-        tree_demand1 = reshaped_temp.tolist()
+        # tree_demand1 = df_scen1.iloc[: , 3:].values.tolist()
+        # temp = np.array(tree_demand1)
+        # reshaped_temp = temp.reshape(7, args.K, args.M)
+        # tree_demand1 = reshaped_temp.tolist()
 
-        tree_demand2 = df_scen2.iloc[: , 3:].values.tolist()
-        temp = np.array(tree_demand2)
-        reshaped_temp = temp.reshape(args.n, args.K, args.T)
-        tree_demand2 = reshaped_temp.tolist()
+        # tree_demand2 = df_scen2.iloc[: , 3:].values.tolist()
+        # temp = np.array(tree_demand2)
+        # reshaped_temp = temp.reshape(args.TN, args.K, args.M)
+        # tree_demand2 = reshaped_temp.tolist()
 
-        self.tree = scenariotree.ScenarioTree(args.n)
-        self.tree._build_tree_red(tree_adj_matrix)
-        self.tree._build_tree_black(tree_demand1,tree_demand2,tree_pr)
-        # self.tree.print_tree_sce()
-        # self.tree.print_tree_red()
+        # self.tree = scenariotree.ScenarioTree(args.TN)
+        # self.tree._build_tree_red(tree_adj_matrix)
+        # self.tree._build_tree_black(tree_demand1,tree_demand2,tree_pr)
+        # # self.tree.print_tree_sce()
+        # # self.tree.print_tree_red()
         
 
         # pdb.set_trace()
+
+        ### ------------------ MC & Poisson --------------- ###
+
+        df_MC = pd.read_excel("scen_tree/MC.xlsx")
+        df_MC = df_MC.iloc[: , 1:]
+        MC_tran_matrix = df_MC.values.tolist()
+
+        df_month_par = pd.read_excel("scen_tree/Hurricane_month.xlsx")
+        df_month_par = df_month_par.iloc[: , 1:]
+        temp = np.array(df_month_par)
+        reshaped_temp = temp.reshape(args.N, args.M)
+        month_par = reshaped_temp.tolist()
+
+        self.demand = np.zeros((args.T,args.N,args.K,args.P,args.M))
+        self.demand_root = np.zeros((args.K,args.P,args.M))
+
+        for t in range(args.T):
+            for n in range(args.N):
+                for m in range(args.M):
+                    for k in range(args.K):
+                        self.demand[t][n][k][0][m] = np.random.poisson(month_par[n][m], 1)*args.DTrailer
+                        self.demand[t][n][k][1][m] = np.random.poisson(month_par[n][m], 1)*args.DMHU
+
+        for n in range(args.N):
+            for m in range(args.M):
+                for k in range(args.K):
+                    self.demand_root[k][0][m] = np.random.poisson(month_par[n][m], 1)*args.DTrailer
+                    self.demand_root[k][1][m] = np.random.poisson(month_par[n][m], 1)*args.DMHU
+
+
+        self.tree = scenariotree.ScenarioTree(args.TN, self.demand_root)
+        self.tree._build_tree_red(args, MC_tran_matrix, self.demand)
+
+        self.tree.print_tree_sce()
+        self.tree.print_tree_red()
+        
 
 
         ### ------------------ Distance matrix ------------ ###

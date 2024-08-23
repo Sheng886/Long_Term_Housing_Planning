@@ -12,7 +12,6 @@ import time
 if __name__ == '__main__':
 
     args = Arguments().parser().parse_args()
-
     input_data = inpu_data.input_data_class(args)
 
 

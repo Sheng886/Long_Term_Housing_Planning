@@ -12,10 +12,13 @@ class Arguments:
         self._parser.add_argument('--K', type=int, default=3, help='Scenario')
         self._parser.add_argument('--P', type=int, default=2, help='Housing Type')
         self._parser.add_argument('--G', type=int, default=2, help='Victims Group')
-        self._parser.add_argument('--T', type=int, default=6, help='number of node in a scen path')
+        self._parser.add_argument('--M', type=int, default=6, help='number of node in a scen path')
         self._parser.add_argument('--A', type=int, default=8, help='Number of Attribute')
-        self._parser.add_argument('--m', type=int, default=3, help='Number of stage')
-        self._parser.add_argument('--state', type=int, default=2, help='state')
+        
+        # Tree
+        self._parser.add_argument('--T', type=int, default=3, help='Number of stage')
+        self._parser.add_argument('--N', type=int, default=3, help='Number of state')
+        self._parser.add_argument('--TN', type=int, default=7, help='number of node in tree')
 
         # Parameter
         self._parser.add_argument('--t_cost', type=int, default=10, help='Transportation cost')
@@ -24,8 +27,11 @@ class Arguments:
         # Scen Factor
         self._parser.add_argument('--s_factor', type=int, default=1, help='Shortage Factor')
 
-        # Tree
-        self._parser.add_argument('--n', type=int, default=7, help='number of node in tree')
+        # Baseline deamand
+        self._parser.add_argument('--DTrailer', type=int, default=200, help='Shortage Factor')
+        self._parser.add_argument('--DMHU', type=int, default=50, help='Shortage Factor')
+
+        
 
 
         # Path
