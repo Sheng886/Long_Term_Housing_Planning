@@ -31,8 +31,8 @@ class subporblem():
 
         # Objective
         self.sub.setObjective(quicksum(self.idata.O_p[p]*self.aak[w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p] for w in range(args.W) for p in range(args.P)) 
-                              + quicksum(quicksum(self.idata.O_p[p]*self.ak[t,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
-                              + quicksum(self.idata.CU_g[g]*self.sk[t,j,g] for j in range(args.J) for g in range(args.G)) for t in range(args.M+1)), GRB.MINIMIZE);
+                              + quicksum(quicksum(self.idata.O_p[p]*self.ak[m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
+                              + quicksum(self.idata.CU_g[g]*self.sk[m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)), GRB.MINIMIZE);
 
 
         # Initial Invenory 
@@ -50,44 +50,44 @@ class subporblem():
 
 
         # Production Leadtime (assume 1 month lead time)
-        for t in range(1,args.M+1):
+        for m in range(1,args.M+1):
             for i in range(args.I):
-                self.sub.addConstr(self.bk[t-1,i] + quicksum(self.ak[t,i,w,p] for p in range(args.P) for w in range(args.W)) ==  self.bk[t,i] + quicksum(self.ak[t-self.idata.P_p[p],i,w,p] for p in range(args.P) for w in range(args.W) if t-self.idata.P_p[p] > 0))
+                self.sub.addConstr(self.bk[m-1,i] + quicksum(self.ak[m,i,w,p] for p in range(args.P) for w in range(args.W)) ==  self.bk[m,i] + quicksum(self.ak[m-self.idata.P_p[p],i,w,p] for p in range(args.P) for w in range(args.W) if m-self.idata.P_p[p] > 0))
 
         # Production Capacity E_i
         # Dual
-        self.i_Production_Capacity_cons = [[0 for i in range(args.I)] for t in range(args.M+1)]
-        for t in range(args.M+1):
+        self.i_Production_Capacity_cons = [[0 for i in range(args.I)] for m in range(args.M+1)]
+        for m in range(args.M+1):
             for i in range(args.I):
-                 self.i_Production_Capacity_cons[t][i] = self.sub.addConstr(self.bk[t,i] <= self.idata.B_i[i])
+                 self.i_Production_Capacity_cons[m][i] = self.sub.addConstr(self.bk[m,i] <= self.idata.B_i[i])
 
         # Staging Area Constraints
         # receive self.u[n,w]
         # Dual
-        self.k_Staging_Capacity_cons = [[0 for w in range(args.W)] for t in range(args.M+1)]
-        for t in range(args.M+1):
+        self.k_Staging_Capacity_cons = [[0 for w in range(args.W)] for m in range(args.M+1)]
+        for m in range(args.M+1):
             for w in range(args.W):
-                self.k_Staging_Capacity_cons[t][w] = self.sub.addConstr(quicksum(self.vk[t,w,p] for p in range(args.P)) <= 0)
+                self.k_Staging_Capacity_cons[m][w] = self.sub.addConstr(quicksum(self.vk[m,w,p] for p in range(args.P)) <= 0)
 
         # Delviery Flow
-        for t in range(1,args.M+1):
+        for m in range(1,args.M+1):
             for w in range(args.W):
                 for p in range(args.P):
-                    if(t -self.idata.P_p[p] > 0):
-                        self.sub.addConstr(self.vk[t-1,w,p] + quicksum(self.ak[t-self.idata.P_p[p],i,w,p] for i in range(args.I)) == self.vk[t,w,p] + quicksum(self.fk[t,w,j,p,g] for j in range(args.J) for g in range(args.G)))
+                    if(m-self.idata.P_p[p] > 0):
+                        self.sub.addConstr(self.vk[m-1,w,p] + quicksum(self.ak[m-self.idata.P_p[p],i,w,p] for i in range(args.I)) == self.vk[m,w,p] + quicksum(self.fk[m,w,j,p,g] for j in range(args.J) for g in range(args.G)))
                     else:
-                        self.sub.addConstr(self.vk[t-1,w,p]  == self.vk[t,w,p] + quicksum(self.fk[t,w,j,p,g] for j in range(args.J) for g in range(args.G)))
+                        self.sub.addConstr(self.vk[m-1,w,p]  == self.vk[m,w,p] + quicksum(self.fk[m,w,j,p,g] for j in range(args.J) for g in range(args.G)))
 
 
         
         # Satify Demand Flow
         # receive self.tree[n].children_blackpath[k].demand[g][t-1]*self.idata.J_pro[j]
         # Dual
-        self.l_Demand_Flow_cons = [[[0 for g in range(args.G)] for j in range(args.J)] for t in range(args.M+1)]
-        for t in range(1,args.M+1):
+        self.l_Demand_Flow_cons = [[[0 for g in range(args.G)] for j in range(args.J)] for m in range(args.M+1)]
+        for m in range(1,args.M+1):
             for j in range(args.J):
                 for g in range(args.G):
-                    self.l_Demand_Flow_cons[t][j][g] = self.sub.addConstr(quicksum(self.fk[t,w,j,p,g] for w in range(args.W) for p in range(args.P)) + self.sk[t,j,g] == 0)
+                    self.l_Demand_Flow_cons[m][j][g] = self.sub.addConstr(quicksum(self.fk[m,w,j,p,g] for w in range(args.W) for p in range(args.P)) + self.sk[m,j,g] == 0)
 
 
         # Assumption Replensih by MHS
@@ -108,15 +108,15 @@ class subporblem():
                 self.f_Initial_Invenory_cons[w][p].setAttr(GRB.Attr.RHS, v_vals[n,w,p].x)
 
         # Staging Area Constraints
-        for t in range(args.M+1):
+        for m in range(args.M+1):
             for w in range(args.W):
-                self.k_Staging_Capacity_cons[t][w].setAttr(GRB.Attr.RHS, u_vals[n,w].x)
+                self.k_Staging_Capacity_cons[m][w].setAttr(GRB.Attr.RHS, u_vals[n,w].x)
 
         # Satify Demand Flow
-        for t in range(1,args.M+1):
+        for m in range(1,args.M+1):
             for j in range(args.J):
                 for g in range(args.G):
-                    self.l_Demand_Flow_cons[t][j][g].setAttr(GRB.Attr.RHS, self.tree[n].demand[k][g][t-1]*self.idata.J_pro[j])
+                    self.l_Demand_Flow_cons[m][j][g].setAttr(GRB.Attr.RHS, self.tree[n].demand[k][g][m]*self.idata.J_pro[j])
 
         # Assumption Replensih by MHS
         for w in range(args.W):
@@ -141,21 +141,21 @@ class subporblem():
                 pi_f[w][p] = self.f_Initial_Invenory_cons[w][p].pi
                 temp = temp + pi_f[w][p]*v_vals[n,w,p].x
 
-        for t in range(args.M+1):
+        for m in range(args.M+1):
             for i in range(args.I):
-                 pi_i[t][i] = self.i_Production_Capacity_cons[t][i].pi
-                 temp = temp + pi_i[t][i]*self.idata.B_i[i]
+                 pi_i[m][i] = self.i_Production_Capacity_cons[m][i].pi
+                 temp = temp + pi_i[m][i]*self.idata.B_i[i]
 
-        for t in range(args.M+1):
+        for m in range(args.M+1):
             for w in range(args.W):
-                pi_k[t][w] = self.k_Staging_Capacity_cons[t][w].pi
-                temp = temp + pi_k[t][w]*u_vals[n,w].x
+                pi_k[m][w] = self.k_Staging_Capacity_cons[m][w].pi
+                temp = temp + pi_k[m][w]*u_vals[n,w].x
 
-        for t in range(1,args.M+1):
+        for m in range(1,args.M+1):
             for j in range(args.J):
                 for g in range(args.G):
-                    pi_l[t][j][g] = self.l_Demand_Flow_cons[t][j][g].pi
-                    temp = temp + pi_l[t][j][g]*self.tree[n].demand[k][g][t-1]*self.idata.J_pro[j]
+                    pi_l[m][j][g] = self.l_Demand_Flow_cons[m][j][g].pi
+                    temp = temp + pi_l[m][j][g]*self.tree[n].demand[k][g][m]*self.idata.J_pro[j]
 
         for w in range(args.W):
             for p in range(args.P):
@@ -255,9 +255,9 @@ class Benders():
                     if(self.theta[n,k].x < obj[n][k] - cut_vio_thred and abs(self.theta[n,k].x - obj[n][k])/max(abs(self.theta[n,k].x),1e-10) > cut_vio_thred):
 
                         self.master.addConstr(self.theta[n,k] >= quicksum(self.v[n,w,p]*pi_f[w][p] for w in range(args.W) for p in range(args.P)) 
-                                                                + quicksum(self.idata.B_i[i]*pi_i[t][i] for t in range(args.M+1) for i in range(args.I))
-                                                                + quicksum(self.u[n,w]*pi_k[t][w] for t in range(args.M+1) for w in range(args.W))
-                                                                + quicksum(self.tree[n].demand[k][g][t-1]*self.idata.J_pro[j]*pi_l[t][j][g] for t in range(1,args.M+1) for j in range(args.J) for g in range(args.G))
+                                                                + quicksum(self.idata.B_i[i]*pi_i[m][i] for m in range(args.M+1) for i in range(args.I))
+                                                                + quicksum(self.u[n,w]*pi_k[m][w] for m in range(args.M+1) for w in range(args.W))
+                                                                + quicksum(self.tree[n].demand[k][g][m]*self.idata.J_pro[j]*pi_l[m][j][g] for m in range(1,args.M+1) for j in range(args.J) for g in range(args.G))
                                                                 + quicksum(self.v[n,w,p]*pi_m[w][p] for w in range(args.W) for p in range(args.P)))
 
             UB_temp = sum(self.tree[n].prob_to_node*(sum(self.idata.E_w[w]*self.y[n,w].x for w in range(args.W)) 

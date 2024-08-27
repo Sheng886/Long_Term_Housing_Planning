@@ -63,28 +63,36 @@ class input_data_class:
         reshaped_temp = temp.reshape(args.N, args.M)
         month_par = reshaped_temp.tolist()
 
-        self.demand = np.zeros((args.T,args.N,args.K,args.P,args.M))
-        self.demand_root = np.zeros((args.K,args.P,args.M))
+        self.demand = np.zeros((args.T,args.N,args.K,args.G,args.M+1))
+        self.demand_root = np.zeros((args.K,args.G,args.M+1))
 
         for t in range(args.T):
             for n in range(args.N):
                 for m in range(args.M):
                     for k in range(args.K):
-                        self.demand[t][n][k][0][m] = np.random.poisson(month_par[n][m], 1)*args.DTrailer
-                        self.demand[t][n][k][1][m] = np.random.poisson(month_par[n][m], 1)*args.DMHU
+                        if(m == 0):
+                            self.demand[t][n][k][0][m] = 0
+                            self.demand[t][n][k][1][m] = 0
+                        else:
+                            self.demand[t][n][k][0][m] = np.random.poisson(month_par[n][m], 1)*args.DTrailer
+                            self.demand[t][n][k][1][m] = np.random.poisson(month_par[n][m], 1)*args.DMHU
 
         for n in range(args.N):
             for m in range(args.M):
                 for k in range(args.K):
-                    self.demand_root[k][0][m] = np.random.poisson(month_par[n][m], 1)*args.DTrailer
-                    self.demand_root[k][1][m] = np.random.poisson(month_par[n][m], 1)*args.DMHU
+                    if(m ==0):
+                        self.demand_root[k][0][m] = 0
+                        self.demand_root[k][1][m] = 0
+                    else:
+                        self.demand_root[k][0][m] = np.random.poisson(month_par[n][m], 1)*args.DTrailer
+                        self.demand_root[k][1][m] = np.random.poisson(month_par[n][m], 1)*args.DMHU
 
 
         self.tree = scenariotree.ScenarioTree(args.TN, self.demand_root)
-        self.tree._build_tree_red(args, MC_tran_matrix, self.demand)
+        self.tree._build_tree_red(args, self.MC_tran_matrix, self.demand)
 
-        self.tree.print_tree_sce()
-        self.tree.print_tree_red()
+        # self.tree.print_tree_sce()
+        # self.tree.print_tree_red()
         
 
 

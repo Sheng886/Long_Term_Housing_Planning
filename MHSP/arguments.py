@@ -19,6 +19,7 @@ class Arguments:
         self._parser.add_argument('--T', type=int, default=3, help='Number of stage')
         self._parser.add_argument('--N', type=int, default=3, help='Number of state')
         self._parser.add_argument('--TN', type=int, default=7, help='number of node in tree')
+        self._parser.add_argument('--initial_state', type=int, default=0, help='initial_state_root')
 
         # Parameter
         self._parser.add_argument('--t_cost', type=int, default=10, help='Transportation cost')
@@ -30,6 +31,10 @@ class Arguments:
         # Baseline deamand
         self._parser.add_argument('--DTrailer', type=int, default=200, help='Shortage Factor')
         self._parser.add_argument('--DMHU', type=int, default=50, help='Shortage Factor')
+
+        # MAX_ITER
+        self._parser.add_argument('--MAX_ITER', type=int, default=1000, help='Shortage Factor')
+        self._parser.add_argument('--LB_TOL', type=float, default=1e-4, help='Shortage Factor')
 
         
 
