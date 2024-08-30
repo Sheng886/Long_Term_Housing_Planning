@@ -28,13 +28,14 @@ class ScenarioNode_red:
 
 
 class ScenarioTree:
-    def __init__(self, node_num, demand_root):
+    def __init__(self, args, node_num, demand_root):
 
         self.node_all = [None for _ in range(node_num)]
-        self.node_all[0] = ScenarioNode_red(name="Root (t=0, n=1)",state=1, stage=0, root=True, demand=demand_root)
+        self.node_all[0] = ScenarioNode_red(name="Root (t=0, n=1)",state=args.initial_state, stage=0, root=True, demand=demand_root)
+        self.args = args
 
 
-    def _build_tree_red(self,args, MC_tran, demand):
+    def _build_tree_red(self    , MC_tran, demand):
         
         queue = []
         queue.append(0)
@@ -44,11 +45,11 @@ class ScenarioTree:
 
             node = queue[0]
 
-            for n in range(args.N):
+            for n in range(self.args.N):
                 current_count += 1
                 stage_temp = self.node_all[node].stage + 1
 
-                if(stage_temp < args.T):
+                if(stage_temp < self.args.T):
                     queue.append(current_count)
                     
 

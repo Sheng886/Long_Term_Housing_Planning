@@ -32,8 +32,11 @@ class Arguments:
         self._parser.add_argument('--DTrailer', type=int, default=200, help='Shortage Factor')
         self._parser.add_argument('--DMHU', type=int, default=50, help='Shortage Factor')
 
-        # MAX_ITER
-        self._parser.add_argument('--MAX_ITER', type=int, default=1000, help='Shortage Factor')
+        # Stop_Criteria
+        self._parser.add_argument('--MAX_ITER', type=int, default=100000, help='Shortage Factor')
+        self._parser.add_argument('--time_limit', type=int, default=10800, help='Shortage Factor')
+        self._parser.add_argument('--CUTVIOL_MAXITER', type=float, default=100000, help='Shortage Factor')
+        self._parser.add_argument('--STALL', type=int, default=200, help='Shortage Factor')
         self._parser.add_argument('--LB_TOL', type=float, default=1e-4, help='Shortage Factor')
 
         

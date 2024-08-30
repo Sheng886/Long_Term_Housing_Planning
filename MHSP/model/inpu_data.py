@@ -88,8 +88,8 @@ class input_data_class:
                         self.demand_root[k][1][m] = np.random.poisson(month_par[n][m], 1)*args.DMHU
 
 
-        self.tree = scenariotree.ScenarioTree(args.TN, self.demand_root)
-        self.tree._build_tree_red(args, self.MC_tran_matrix, self.demand)
+        self.tree = scenariotree.ScenarioTree(args, args.TN, self.demand_root)
+        self.tree._build_tree_red(self.MC_tran_matrix, self.demand)
 
         # self.tree.print_tree_sce()
         # self.tree.print_tree_red()

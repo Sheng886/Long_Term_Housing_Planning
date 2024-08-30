@@ -5,6 +5,7 @@ import pandas as pd
 import gurobipy as gp
 from gurobipy import GRB
 from gurobipy import quicksum
+import time
 import pdb
 
 cut_vio_thred = 1e-5
@@ -19,6 +20,12 @@ class StageProblem:
         self.state = state
         self.stage = stage
         self.stage0 = stage0
+
+        self.cut_rhs = []
+        self.cut = []
+
+        self.cut_rhs_temp = []
+        self.cut_temp = []
         
         self.model = gp.Model(f"Stage_{stage}_State_{state}_model")
         # Stage variable
@@ -51,14 +58,15 @@ class StageProblem:
                                                       + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                                                 + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)) for k in range(args.K))
                                   + quicksum(self.idata.MC_tran_matrix[state][n]*self.theta[n] for n in range(args.N)) 
-                                 , GRB.MINIMIZE);
+                                , GRB.MINIMIZE);
         else:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
-                      + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) for w in range(args.W) for p in range(args.P))
-                      + (1/args.K)*quicksum(quicksum(self.idata.O_p[p]*self.aak[k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
-                                          + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
-                                                    + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)) for k in range(args.K))
-                     , GRB.MINIMIZE);
+                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) for w in range(args.W) for p in range(args.P))
+                                  + (1/args.K)*quicksum(quicksum(self.idata.O_p[p]*self.aak[k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
+                                                      + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
+                                                                + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)) for k in range(args.K))
+                                , GRB.MINIMIZE);
+
 
 
         # Staging Area Capacity
@@ -162,6 +170,9 @@ class StageProblem:
 
         # Input first-stage solution
 
+        self.u_pre = u
+        self.v_pre = v
+
         
         if self.stage0 != True:
             # Staging Capacity
@@ -173,10 +184,19 @@ class StageProblem:
                 for p in range(self.args.P):
                     self.c_inv_level[w][p].setAttr(GRB.Attr.RHS, v[w,p].x)
 
+
+        for c in range(len(self.cut_rhs_temp)):
+            self.cut_rhs.append(self.cut_rhs_temp[c])
+            self.cut.append(self.cut_temp[c])
+
+        self.cut_rhs_temp = []
+        self.cut_temp = []
+
+
+
         self.model.update()
         self.model.setParam("OutputFlag", 0)
         self.model.optimize()
-
 
         return self.u,self.v
 
@@ -188,21 +208,26 @@ class StageProblem:
         pi_e = np.zeros((self.args.K, self.args.M+1, self.args.I))
         pi_h = np.zeros((self.args.K, self.args.M+1,self.args.J,self.args.G))
 
+        temp = 0
+
         if self.stage0 != True:
             # Staging Capacity
             for w in range(self.args.W):
                 pi_b[w] = self.b_staging_cap[w].pi
+                temp = temp + self.b_staging_cap[w].pi*self.u_pre[w].x
 
             # Invenory Level
             for w in range(self.args.W):
                 for p in range(self.args.P):
                     pi_c[w][p] = self.c_inv_level[w][p].pi
+                    temp = temp + self.c_inv_level[w][p].pi*self.v_pre[w,p].x
 
         # Production Capacity E_i
         for k in range(self.args.K):
             for m in range(self.args.M+1):
                 for i in range(self.args.I):
                      pi_e[k][m][i] = self.h_pro_cap[k][m][i].pi
+                     temp = temp + self.h_pro_cap[k][m][i].pi*self.idata.B_i[i]
 
 
         # Satify Demand Flow
@@ -211,25 +236,68 @@ class StageProblem:
                 for j in range(self.args.J):
                     for g in range(self.args.G):
                         pi_h[k][m][j][g] = self.k_demand[k][m][j][g].pi
+                        if(self.stage0 == False):
+                            temp = temp + self.k_demand[k][m][j][g].pi*self.idata.demand[self.stage][self.state][k][g][m]*self.idata.J_pro[j]
+                        else:
+                            temp = temp + self.k_demand[k][m][j][g].pi*self.idata.demand_root[k][g][m]*self.idata.J_pro[j]
 
-        return pi_b,pi_c,pi_e,pi_h,self.model.ObjVal
+        
+        cut_pi = 0
 
-    def add_cut(self,obj,stage_next,state_sample_path,state_next,pi_b,pi_c,pi_e,pi_h):
+        # Cut
+        if(self.cut):
+            for c in range(len(self.cut_rhs)):
+                temp = temp + self.cut[c].pi*self.cut_rhs[c]
+                cut_pi = cut_pi + self.cut[c].pi*self.cut_rhs[c] 
+
+
+
+        if(abs(temp-self.model.ObjVal) >= 1e-5):
+            print("stage:",self.stage,"problematic dual solution!")
+            print("temp:",temp)
+            print("obj:",self.model.ObjVal)
+            pdb.set_trace()
+
+        return pi_b,pi_c,pi_e,pi_h,cut_pi,self.model.ObjVal
+
+    def add_cut(self,obj,stage_next,state_sample_path,state_next,pi_b,pi_c,pi_e,pi_h,cut_pi):
+
+        temp_cut_itr = 0
 
         if(self.state == state_sample_path or self.stage0==True):
+
             if(self.theta[state_next].x < obj - cut_vio_thred and abs(self.theta[state_next].x - obj)/max(abs(self.theta[state_next].x),1e-10) > cut_vio_thred):
 
-                self.model.addConstr(self.theta[state_next] >= quicksum(pi_b[w]*self.u[w] for w in range(self.args.W)) 
-                                                            + quicksum(pi_c[w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
-                                                            + quicksum(pi_e[k][m][i]*self.idata.B_i[i] for k in range(self.args.K) for m in range(self.args.M+1) for i in range(self.args.I))
-                                                            + quicksum(pi_h[k][m][j][g]*self.idata.demand[stage_next][state_next][k][g][m]*self.idata.J_pro[j] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G)))
-        else:
-            self.model.addConstr(self.theta[state_next] >= quicksum(pi_b[w]*self.u[w] for w in range(self.args.W)) 
-                                                        + quicksum(pi_c[w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
-                                                        + quicksum(pi_e[k][m][i]*self.idata.B_i[i] for k in range(self.args.K) for m in range(self.args.M+1) for i in range(self.args.I))
-                                                        + quicksum(pi_h[k][m][j][g]*self.idata.demand[stage_next][state_next][k][g][m]*self.idata.J_pro[j] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G)))
-                      
+                temp_constraint = self.model.addConstr(self.theta[state_next] >= quicksum(pi_b[w]*self.u[w] for w in range(self.args.W)) 
+                                                                                + quicksum(pi_c[w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
+                                                                                + quicksum(pi_e[k][m][i]*self.idata.B_i[i] for k in range(self.args.K) for m in range(self.args.M+1) for i in range(self.args.I))
+                                                                                + quicksum(pi_h[k][m][j][g]*self.idata.demand[stage_next][state_next][k][g][m]*self.idata.J_pro[j] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
+                                                                                + cut_pi)
+                
+                temp_rhs = sum(pi_e[k][m][i]*self.idata.B_i[i] for k in range(self.args.K) for m in range(self.args.M+1) for i in range(self.args.I)) 
+                temp_rhs = temp_rhs + sum(pi_h[k][m][j][g]*self.idata.demand[stage_next][state_next][k][g][m]*self.idata.J_pro[j] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
+                temp_rhs = temp_rhs + cut_pi
 
+                self.cut_temp.append(temp_constraint)
+                self.cut_rhs_temp.append(temp_rhs)
+                temp_cut_itr = 1
+            else:
+                temp_cut_itr = 0
+        else:
+            temp_constraint = self.model.addConstr(self.theta[state_next] >= quicksum(pi_b[w]*self.u[w] for w in range(self.args.W)) 
+                                                                + quicksum(pi_c[w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
+                                                                + quicksum(pi_e[k][m][i]*self.idata.B_i[i] for k in range(self.args.K) for m in range(self.args.M+1) for i in range(self.args.I))
+                                                                + quicksum(pi_h[k][m][j][g]*self.idata.demand[stage_next][state_next][k][g][m]*self.idata.J_pro[j] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
+                                                                + cut_pi)
+                
+            temp_rhs = sum(pi_e[k][m][i]*self.idata.B_i[i] for k in range(self.args.K) for m in range(self.args.M+1) for i in range(self.args.I))
+            temp_rhs = temp_rhs + sum(pi_h[k][m][j][g]*self.idata.demand[stage_next][state_next][k][g][m]*self.idata.J_pro[j] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
+            temp_rhs = temp_rhs + cut_pi
+            
+            self.cut_temp.append(temp_constraint)
+            self.cut_rhs_temp.append(temp_rhs)
+
+        return temp_cut_itr
 
 
 class solve_SDDP:
@@ -253,12 +321,36 @@ class solve_SDDP:
             state = next_state[0]
             path.append(state)
 
-        print(path)
+        # print(path)
         return path
+
+
+    def termination_check(self, iter, relative_gap, LB, start, cutviol_iter):
+        flag = 0
+        Elapsed = time.time() - start
+        if(iter > self.args.MAX_ITER):
+            flag = 1
+            print("max iteration is reached")
+        elif (Elapsed > self.args.time_limit):
+            flag = 2
+            print("time limit is reached")
+        elif (cutviol_iter > self.args.CUTVIOL_MAXITER):
+            flag = 3
+            print("cut violation is reached")
+        else:
+            if iter > self.args.STALL:
+                relative_gap = (LB[iter-1]-LB[iter-1-self.args.STALL])/max(1e-10,abs(LB[iter-1-self.args.STALL]))
+                if relative_gap < self.args.LB_TOL:
+                    flag = 4
+                    print("the LB is not making significant progress")
+        return flag, Elapsed
 
     def run(self):
 
-        old_LB = 0
+        start = time.time()
+        LB_list = []
+        relative_gap = 1e10
+        cutviol_iter = 0
 
         for iter in range(self.args.MAX_ITER):
 
@@ -273,25 +365,33 @@ class solve_SDDP:
 
 
             # ----------------------------------- Backward -----------------------------------
-            pi_b,pi_c,pi_e,pi_h,LB = self.stage_leaf[sample_path[self.args.T-1]].backward_run()
+            pi_b,pi_c,pi_e,pi_h,cut_pi,LB = self.stage_leaf[sample_path[self.args.T-1]].backward_run()
             for stage in reversed(range(self.args.T-1)):
 
                 # ---------------------------- Cut Sharing ----------------------------
                 for state in range(self.args.N):
-                    self.stage[stage][state].add_cut(LB,stage+1,sample_path[stage],sample_path[stage+1],pi_b,pi_c,pi_e,pi_h)
+                    cut_iter_temp = self.stage[stage][state].add_cut(LB,stage+1,sample_path[stage],sample_path[stage+1],pi_b,pi_c,pi_e,pi_h,cut_pi)
+                    cutviol_iter = cutviol_iter + cut_iter_temp
 
-                pi_b,pi_c,pi_e,pi_h,LB =  self.stage[stage][sample_path[stage]].backward_run()
+                pi_b,pi_c,pi_e,pi_h,cut_pi,LB =  self.stage[stage][sample_path[stage]].backward_run()
 
-            self.stage_root.add_cut(LB,0,0,sample_path[0],pi_b,pi_c,pi_e,pi_h)
-            pi_b,pi_c,pi_e,pi_h,LB =  self.stage_root.backward_run()
+            cut_iter_temp = self.stage_root.add_cut(LB,0,0,sample_path[0],pi_b,pi_c,pi_e,pi_h,cut_pi)
+            cutviol_iter = cutviol_iter + cut_iter_temp
 
-            print(LB)
+            pi_b,pi_c,pi_e,pi_h,cut_pi,LB =  self.stage_root.backward_run()
 
-            if ((LB - old_LB) / LB <= self.args.LB_TOL and iter>= (self.args.MAX_ITER/2)):
-                print(LB)
-                break;
+            LB_list.append(LB)
+            if(iter%50 == 0):
+                print("iteration:", iter, "LB:", LB)
 
-            old_LB = LB
+            
+            # ----------------------------------- Stop Criteria -----------------------------------
+            flag, Elapsed = self.termination_check(iter, relative_gap, LB_list, start, cutviol_iter)
+            if flag != 0:
+                train_time = Elapsed
+                print("total time:", Elapsed)
+                break
+
 
             
 
