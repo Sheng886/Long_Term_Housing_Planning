@@ -137,7 +137,7 @@ class baseline_class():
             for k in range(args.K):
                 for w in range(args.W):
                     for p in range(args.P):
-                        self.model.addConstr(self.vk[n,k,args.M,w,p] + self.aak[n,k,w,p] + self.bbk[n,k,w,p] == self.v[n,w,p])
+                        self.model.addConstr(self.vk[n,k,args.M,w,p] + self.aak[n,k,w,p] - self.bbk[n,k,w,p] == self.v[n,w,p])
 
                             
 

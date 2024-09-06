@@ -32,7 +32,7 @@ class subporblem():
         # Objective
         self.sub.setObjective(quicksum(self.idata.O_p[p]*self.aak[w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p] for w in range(args.W) for p in range(args.P)) 
                               + quicksum(quicksum(self.idata.O_p[p]*self.ak[m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
-                              + quicksum(self.idata.CU_g[g]*self.sk[m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)), GRB.MINIMIZE);
+                                       + quicksum(self.idata.CU_g[g]*self.sk[m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)), GRB.MINIMIZE);
 
 
         # Initial Invenory 
@@ -96,7 +96,7 @@ class subporblem():
         self.m_Replensih_cons = [[0 for p in range(args.P)] for w in range(args.W)]
         for w in range(args.W):
             for p in range(args.P):
-                self.m_Replensih_cons[w][p] = self.sub.addConstr(self.vk[args.M,w,p] + self.aak[w,p] + self.bbk[w,p] == 0)
+                self.m_Replensih_cons[w][p] = self.sub.addConstr(self.vk[args.M,w,p] + self.aak[w,p] - self.bbk[w,p] == 0)
 
     def run(self,args,n,k,v_vals,u_vals):
 

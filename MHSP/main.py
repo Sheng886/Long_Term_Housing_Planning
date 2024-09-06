@@ -18,15 +18,15 @@ if __name__ == '__main__':
     MHSP_extend = MHSP_extend.baseline_class(args, input_data)
     MHSP_extend.run(args)
 
-    # MHSP_Benders_sub = MHSP_Benders.subporblem(args, input_data)
-    # MHSP_Benders = MHSP_Benders.Benders(args, input_data,MHSP_Benders_sub)
-    # MHSP_Benders.run(args)
+    MHSP_Benders_sub = MHSP_Benders.subporblem(args, input_data)
+    MHSP_Benders = MHSP_Benders.Benders(args, input_data,MHSP_Benders_sub)
+    MHSP_Benders.run(args)
 
-    # MHSP_SDDP = MHSP_SDDP.solve_SDDP(args, input_data)
-    # MHSP_SDDP.run()
+    MHSP_SDDP = MHSP_SDDP.solve_SDDP(args, input_data)
+    MHSP_SDDP.run()
 
-    MHSP_SDDP_Benders = MHSP_SDDP_Benders.solve_SDDP(args, input_data)
-    MHSP_SDDP_Benders.run()
+    # MHSP_SDDP_Benders = MHSP_SDDP_Benders.solve_SDDP(args, input_data)
+    # MHSP_SDDP_Benders.run()
 
 
 

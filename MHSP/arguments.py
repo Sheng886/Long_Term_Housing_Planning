@@ -39,6 +39,12 @@ class Arguments:
         self._parser.add_argument('--STALL', type=int, default=200, help='Shortage Factor')
         self._parser.add_argument('--LB_TOL', type=float, default=1e-4, help='Shortage Factor')
 
+        # Method
+        self._parser.add_argument('--Strategic_node', type=int, default=1, help='0: Extend Formulation 1: Benders Decompostion')
+
+        # Debug
+        self._parser.add_argument('--Cost_print', type=bool, default=False, help='0: Extend Formulation 1: Benders Decompostion')
+
         
 
 
