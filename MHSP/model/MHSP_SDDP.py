@@ -851,7 +851,6 @@ class solve_SDDP:
     def Benders_cut_shraing(self,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,root=False,leaf=False,state=None,stage=None):
 
         if(root == True):
-
             for stage_add_Benders_cut in range(self.args.T-1):
                 for state_add_Benders_cut in range(self.args.N):
                     self.stage[stage_add_Benders_cut][state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
@@ -860,7 +859,6 @@ class solve_SDDP:
                 self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
         elif(leaf == True):
-
             # self.stage_root.add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
             # for stage_add_Benders_cut in range(self.args.T-1):
@@ -872,9 +870,7 @@ class solve_SDDP:
                     self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
         
         else:
-            0
             # self.stage_root.add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
-            print(stage,state)
 
             for stage_add_Benders_cut in range(self.args.T-1):
                 for state_add_Benders_cut in range(self.args.N):
