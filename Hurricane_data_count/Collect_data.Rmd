@@ -11,94 +11,65 @@ knitr::opts_chunk$set(echo = TRUE)
 library(zoo)
 library(dplyr)
 library(ggplot2) 
+library(maps)
+library(sp)
+library(maptools)
 ```
-
-# Problem: Capture Housing demand resulting from annual hurricane activity.
-
-# --\> Capture annual hurricane activity
-
-# --\> spatial data?
-
-The next steps in this project are centered on tackling long-term disaster housing planning under demand uncertainty. It comprises two main parts. We, first, provide a forecast model to capture housing demand resulting from annual hurricane activity. Subsequently, the forecasts will be fed into an optimization mode to proactively adapts inventory levels and strategically prepositions housing units in response to the evolving patterns of hurricane activity throughout a year.
-
-# Spatial Data?
-
-<https://www.nhc.noaa.gov/climo/#>:\~:text=Based%20on%20a%2030%2Dyear,%2DSimpson%20Hurricane%20Wind%20Scale).
-
-# Idea:
-
-1)  separate of region → hypothesis test on the same distribution
-2)  Number of hurricane distribution X intensity of hurricane
-
-# Hurricane track load
-
-```{r change HURDAT2 data txt to csv (hurricane)}
-csv = read.csv("Hurricane_track/hurdat2021.txt", header=F, as.is=T)
-
-names(csv) = c("DATE", "TIME_UTC", "POINT_TYPE", "STATUS", 
-	"LATITUDE", "LONGITUDE", "WINDSPEED_KT", "PRESURE_MB", 
-	"NE_34_KT", "SE_34_KT", "NW_34_KT", "SW_34_KT",
-	"NE_50_KT", "SE_50_KT", "NW_50_KT", "SW_50_KT",
-	"NE_64_KT", "SE_64_KT", "NW_64_KT", "SW_64_KT","max_KT")
-
-panel = cbind(HID = NA, HNAME = NA, csv)
-
-panel$HID = ifelse(grepl("AL|EP|CP", panel$DATE), panel$DATE, NA)
-panel$HNAME = ifelse(grepl("AL|EP|CP", panel$DATE), panel$TIME_UTC, NA)
-panel$HID = na.locf(panel$HID)
-panel$HNAME = na.locf(panel$HNAME)
-panel = panel[!grepl("AL|EP|CP", panel$DATE), ]
-
-panel$LATITUDE = trimws(panel$LATITUDE)
-panel$LONGITUDE = trimws(panel$LONGITUDE)
-panel$LATITUDE = ifelse(grepl("S", panel$LATITUDE), paste0("-", panel$LATITUDE), panel$LATITUDE)
-panel$LONGITUDE = ifelse(grepl("W", panel$LONGITUDE), paste0("-", panel$LONGITUDE), panel$LONGITUDE)
-panel$LATITUDE = as.numeric(sub("N|S", "", panel$LATITUDE))
-panel$LONGITUDE = as.numeric(sub("E|W", "", panel$LONGITUDE))
-panel$STATUS = trimws(panel$STATUS)
-panel$DECADE = paste0(substr(panel$DATE, 1, 3), "0")
-
-panel = subset(panel,select = -c(POINT_TYPE))
-panel$HNAME<-gsub(" ","",as.character(panel$HNAME))
-panel = panel[panel$HNAME != "UNNAMED",]
-panel$TIME_UTC=sub(" ","",as.character(panel$TIME_UTC))
-
-write.csv(panel, "Hurricane_track/hurdat2021.csv", row.names=F)
-```
-
-Due to the fact that hurricanes impacting the continental United States predominantly originate from the Gulf of Mexico and the Atlantic Ocean\~\cite{NOAA}, we can employ these specific geographical zones to delineate two regions in the southeastern United States.
 
 ```{r}
-panel1 = panel[panel$WINDSPEED_KT > 110 & panel$LONGITUDE < -80,]
-panel2 = panel[panel$WINDSPEED_KT > 110 & panel$LONGITUDE >= -80 & panel$LONGITUDE <= -70,]
-
-Hurricane_data_Gulf = data.frame(Name = panel1$HNAME,Year = as.integer(substr(panel1$DATE,1,4)))
-Hurricane_data_Atlantic = data.frame(Name = panel2$HNAME,Year = as.integer(substr(panel2$DATE,1,4)))
+Hurricane_ = read.csv("Hurricane_track/Hurricane_landfall_windspeed.csv", as.is=T)
 
 
-time = c()
-count_hurricane_Gulf = c()
-count_hurricane_Atlantic = c()
-for (i in (1980:2021))
-{
-  time = c(time,i)
-  count_Gulf = nrow(Hurricane_data_Gulf[Hurricane_data_Gulf$Year == i,] %>% group_by(Year) %>% count(Name))
-  count_Atlantic = nrow(Hurricane_data_Atlantic[Hurricane_data_Atlantic$Year == i,] %>% group_by(Year) %>% count(Name))
-  count_hurricane_Gulf = c(count_hurricane_Gulf,count_Gulf)
-  count_hurricane_Atlantic = c(count_hurricane_Atlantic,count_Atlantic)
+year <- sub(".*/.*/", "", Hurricane_$year)
+year = substr(year, 1, 4)
+Hurricane_$year = year
+
+Hurricane_$Latitude = as.numeric(substr(Hurricane_$Latitude, 1, 4))
+Hurricane_$Longitude = as.numeric(substr(Hurricane_$Longitude, 1, 4))
+
+Hurricane_$Latitude = Hurricane_$Latitude
+Hurricane_$Longitude = Hurricane_$Longitude*-1
+
+Hurricane_data_Gulf = Hurricane_[Hurricane_$Longitude < -81.4,]
+Hurricane_data_Atlantic = Hurricane_[Hurricane_$Longitude >= -81.4 & Hurricane_$Longitude <= -70,]
+
+
+# Create a base map of the USA
+usa_map <- map_data("usa")
+
+# Plot the map with the coordinates
+ggplot() +
+  geom_polygon(data = usa_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "black") +
+  geom_point(data = Hurricane_data_Gulf, aes(x = Longitude, y = Latitude), color = "purple", size = 1) +
+  geom_point(data = Hurricane_data_Atlantic, aes(x = Longitude, y = Latitude), color = "orange", size = 1) +
+  coord_fixed(1.3) +  # Fix aspect ratio
+  labs(title = "Landfall", x = "Longitude", y = "Latitude") +
+  theme_minimal()
+
+```
+```{r}
+lonlat_to_state_sp <- function(pointsDF) {
+    # Prepare SpatialPolygons object with one SpatialPolygon
+    states <- map('state', fill=TRUE, col="transparent", plot=FALSE)
+    IDs <- sapply(strsplit(states$names, ":"), function(x) x[1])
+    states_sp <- map2SpatialPolygons(states, IDs=IDs, proj4string=CRS("+proj=longlat +datum=WGS84"))
+
+    # Convert pointsDF to a SpatialPoints object 
+    pointsSP <- SpatialPoints(pointsDF, proj4string=CRS("+proj=longlat +datum=WGS84"))
+
+    # Use 'over' to get _indices_ of the Polygons object containing each point 
+        indices <- over(pointsSP, states_sp)
+
+    # Return the state names of the Polygons object containing each point
+    stateNames <- sapply(states_sp@polygons, function(x) x@ID)
+    stateNames[indices]
 }
 
+# Test the function using points in Wisconsin and Oregon.
+landfall_Gulf <- data.frame(x = Hurricane_data_Gulf$Longitude, y = Hurricane_data_Gulf$Latitude)
+landfall_Atlantic <- data.frame(x = Hurricane_data_Atlantic$Longitude, y = Hurricane_data_Atlantic$Latitude)
 
-Hurricane_data_time_Gulf = data.frame(time,count_hurricane_Gulf)
-Hurricane_data_time_Atlantic = data.frame(time,count_hurricane_Atlantic)
-Hurricane_TS_Gulf = read.zoo(Hurricane_data_time_Gulf[c("time","count_hurricane_Gulf")])
-Hurricane_TS_Atlantic = read.zoo(Hurricane_data_time_Atlantic[c("time","count_hurricane_Atlantic")])
-plot(Hurricane_TS_Gulf, col = "blue",ylab="Count",xlab="Year")
-lines(Hurricane_TS_Atlantic, lty=2, col = "red")
-legend("topleft", legend=c("Gulf", "Atlantic"), col=c("red", "blue"), lty=1:2, cex=0.8)
+lonlat_to_state_sp(landfall_Atlantic)
 ```
-```{r}
-ccf_result <- ccf(Hurricane_TS_Gulf, Hurricane_TS_Atlantic, lag.max = 10)
-acf(Hurricane_TS_Gulf)
-acf(Hurricane_TS_Atlantic)
-```
+
+
