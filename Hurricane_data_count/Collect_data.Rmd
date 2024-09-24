@@ -14,6 +14,7 @@ library(ggplot2)
 library(maps)
 library(sp)
 library(maptools)
+library(geosphere)
 ```
 
 ```{r}
@@ -49,27 +50,36 @@ ggplot() +
 ```
 ```{r}
 lonlat_to_state_sp <- function(pointsDF) {
-    # Prepare SpatialPolygons object with one SpatialPolygon
     states <- map('state', fill=TRUE, col="transparent", plot=FALSE)
     IDs <- sapply(strsplit(states$names, ":"), function(x) x[1])
-    states_sp <- map2SpatialPolygons(states, IDs=IDs, proj4string=CRS("+proj=longlat +datum=WGS84"))
-
-    # Convert pointsDF to a SpatialPoints object 
+    states_sp <- map2SpatialPolygons(states, IDs=IDs,proj4string=CRS("+proj=longlat +datum=WGS84"))
     pointsSP <- SpatialPoints(pointsDF, proj4string=CRS("+proj=longlat +datum=WGS84"))
-
-    # Use 'over' to get _indices_ of the Polygons object containing each point 
-        indices <- over(pointsSP, states_sp)
-
-    # Return the state names of the Polygons object containing each point
+    indices <- over(pointsSP, states_sp)
     stateNames <- sapply(states_sp@polygons, function(x) x@ID)
     stateNames[indices]
 }
 
-# Test the function using points in Wisconsin and Oregon.
-landfall_Gulf <- data.frame(x = Hurricane_data_Gulf$Longitude, y = Hurricane_data_Gulf$Latitude)
-landfall_Atlantic <- data.frame(x = Hurricane_data_Atlantic$Longitude, y = Hurricane_data_Atlantic$Latitude)
-
-lonlat_to_state_sp(landfall_Atlantic)
+testPoints <- data.frame(x = Hurricane_data_Gulf$Longitude, y = Hurricane_data_Gulf$Latitude)
+lonlat_to_state_sp(testPoints)
 ```
+
+
+
+
+
+```{r}
+# SS for Gulf
+ggplot(Hurricane_data_Gulf, aes(x = SS)) +
+  geom_histogram(binwidth = 1, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Gulf", x = "Column Values", y = "Frequency") +
+  theme_minimal()
+
+# SS for Atlantic
+ggplot(Hurricane_data_Atlantic, aes(x = SS)) +
+  geom_histogram(binwidth = 1, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Atlantic", x = "Column Values", y = "Frequency") +
+  theme_minimal()
+```
+
 
 
