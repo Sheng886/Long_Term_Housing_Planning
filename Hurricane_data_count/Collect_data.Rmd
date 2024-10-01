@@ -15,6 +15,8 @@ library(maps)
 library(sp)
 library(maptools)
 library(geosphere)
+library(MASS)
+library(viridis) 
 ```
 
 ```{r}
@@ -22,8 +24,10 @@ Hurricane_ = read.csv("Hurricane_track/Hurricane_landfall_windspeed.csv", as.is=
 
 
 year <- sub(".*/.*/", "", Hurricane_$year)
+month <- sub("/.*", "", Hurricane_$year)
 year = substr(year, 1, 4)
-Hurricane_$year = year
+Hurricane_$year = as.numeric(year)
+Hurricane_$month = as.numeric(month)
 
 Hurricane_$Latitude = as.numeric(substr(Hurricane_$Latitude, 1, 4))
 Hurricane_$Longitude = as.numeric(substr(Hurricane_$Longitude, 1, 4))
@@ -32,7 +36,7 @@ Hurricane_$Latitude = Hurricane_$Latitude
 Hurricane_$Longitude = Hurricane_$Longitude*-1
 
 Hurricane_data_Gulf = Hurricane_[Hurricane_$Longitude < -81.4,]
-Hurricane_data_Atlantic = Hurricane_[Hurricane_$Longitude >= -81.4 & Hurricane_$Longitude <= -70,]
+Hurricane_data_Atlantic = Hurricane_[Hurricane_$Longitude >= -81.4 & Hurricane_$Longitude <= -70 & Hurricane_$Latitude <= 36,]
 
 
 # Create a base map of the USA
@@ -43,43 +47,138 @@ ggplot() +
   geom_polygon(data = usa_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "black") +
   geom_point(data = Hurricane_data_Gulf, aes(x = Longitude, y = Latitude), color = "purple", size = 1) +
   geom_point(data = Hurricane_data_Atlantic, aes(x = Longitude, y = Latitude), color = "orange", size = 1) +
-  coord_fixed(1.3) +  # Fix aspect ratio
+  coord_fixed(1.3) +  
   labs(title = "Landfall", x = "Longitude", y = "Latitude") +
+  xlim(c(-100, -60)) +  
+  ylim(c(20, 50)) +     
   theme_minimal()
 
 ```
-```{r}
-lonlat_to_state_sp <- function(pointsDF) {
-    states <- map('state', fill=TRUE, col="transparent", plot=FALSE)
-    IDs <- sapply(strsplit(states$names, ":"), function(x) x[1])
-    states_sp <- map2SpatialPolygons(states, IDs=IDs,proj4string=CRS("+proj=longlat +datum=WGS84"))
-    pointsSP <- SpatialPoints(pointsDF, proj4string=CRS("+proj=longlat +datum=WGS84"))
-    indices <- over(pointsSP, states_sp)
-    stateNames <- sapply(states_sp@polygons, function(x) x@ID)
-    stateNames[indices]
-}
-
-testPoints <- data.frame(x = Hurricane_data_Gulf$Longitude, y = Hurricane_data_Gulf$Latitude)
-lonlat_to_state_sp(testPoints)
-```
-
-
-
-
 
 ```{r}
-# SS for Gulf
-ggplot(Hurricane_data_Gulf, aes(x = SS)) +
-  geom_histogram(binwidth = 1, fill = "lightblue", color = "black", alpha = 0.7) +
-  labs(title = "Gulf", x = "Column Values", y = "Frequency") +
+
+#Landfall Distribution
+kde_Gulf <- kde2d(Hurricane_data_Gulf$Longitude, Hurricane_data_Gulf$Latitude, n = 500)
+kde_Gulf_data <- expand.grid(Longitude = kde_Gulf$x, Latitude = kde_Gulf$y)
+kde_Gulf_data$Density <- as.vector(kde_Gulf$z)
+
+kde_Atlantic <- kde2d(Hurricane_data_Atlantic$Longitude, Hurricane_data_Atlantic$Latitude, n = 500)
+kde_Atlantic_data <- expand.grid(Longitude = kde_Atlantic$x, Latitude = kde_Atlantic$y)
+kde_Atlantic_data$Density <- as.vector(kde_Atlantic$z)
+
+
+ggplot() +
+  geom_polygon(data = usa_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "black") +
+  geom_tile(data = kde_Gulf_data, aes(x = Longitude, y = Latitude, fill = Density)) +
+  geom_tile(data = kde_Atlantic_data, aes(x = Longitude, y = Latitude, fill = Density)) +
+  geom_contour(data = kde_Gulf_data, aes(x = Longitude, y = Latitude, z = Density)) +
+  geom_contour(data = kde_Atlantic_data, aes(x = Longitude, y = Latitude, z = Density)) +
+  scale_fill_viridis_c() +  # Optional: Use a color palette for better visuals
+  labs(title = "Hurricane Landfall KDE",x = "Longitude",y = "Latitude") +
+  coord_fixed(1.3) + 
+  xlim(c(-100, -60)) +  
+  ylim(c(20, 50)) +  
   theme_minimal()
 
-# SS for Atlantic
-ggplot(Hurricane_data_Atlantic, aes(x = SS)) +
-  geom_histogram(binwidth = 1, fill = "lightblue", color = "black", alpha = 0.7) +
-  labs(title = "Atlantic", x = "Column Values", y = "Frequency") +
-  theme_minimal()
+write.csv(Hurricane_data_Gulf, file = "Data/Hurricane_landfall_Gulf.csv", row.names = FALSE)
+write.csv(Hurricane_data_Atlantic, file = "Data/Hurricane_landfall_Atlantic.csv", row.names = FALSE)
+
 ```
 
 
+```{r}
+# Month Distribution
+counts = table(Hurricane_data_Gulf$month)
+percentages = counts/ nrow(Hurricane_data_Gulf)
+print("Gulf, month distribution")
+percentages
+
+counts = table(Hurricane_data_Atlantic$month)
+percentages = counts/ nrow(Hurricane_data_Atlantic)
+print("Atlantic, month distribution")
+percentages
+
+# SS Distribution
+counts = table(Hurricane_data_Gulf$SS)
+percentages = counts/ nrow(Hurricane_data_Gulf)
+print("Gulf, SS distribution")
+percentages
+
+counts = table(Hurricane_data_Atlantic$SS)
+percentages = counts/ nrow(Hurricane_data_Atlantic)
+print("Atlantic, SS distribution")
+percentages
+
+# Frequency Distribution
+counts = table(Hurricane_data_Gulf$year)
+max_frequency = max(counts)
+mean_frequency = sum(counts)/ 173
+print("Gulf, max and mean")
+max_frequency
+mean_frequency
+
+counts = table(Hurricane_data_Atlantic$year)
+max_frequency = max(counts)
+mean_frequency = sum(counts)/ 173
+print("Gulf, max and mean")
+max_frequency
+mean_frequency
+```
+```{r}
+# Regression
+data_all = read.csv("Hurricane_track/Data_all.csv")
+
+data_all$type1[data_all$type1 == 0] = 0.00001
+data_all$type2[data_all$type2 == 0] = 0.00001
+
+
+bc <- boxcox(type1 ~ SVI + node1 + population + SS_scale, data = data_all)
+bc$x[which(bc$y == max(bc$y))]
+
+bc <- boxcox(type2 ~ SVI + node1 + population + SS_scale, data = data_all)
+bc$x[which(bc$y == max(bc$y))]
+
+model1 = lm(type1^(0.1818182) ~ SVI + node1 + population + SS_scale, data = data_all)
+summary(model1)
+model2 = lm(type2^(0.1414141) ~ SVI + node1 + population + SS_scale, data = data_all)
+summary(model2)
+```
+```{r}
+# Collect socioeconomic Data
+state_id_Gulf = c("TX","LA","MS","AL","GA","FL")
+state_id_Atlantic = c("SC","NC","GA","FL")
+
+data_path = "Data"
+
+# Location and Population
+county_all = read.csv("Data/uscounties.csv")
+county_all = county_all[, c("state_id", "county_full", "lng", "lat", "population")]
+
+Data_Gulf = county_all[county_all$state_id %in% state_id_Gulf, ]
+Data_Atlantic = county_all[county_all$state_id %in% state_id_Atlantic, ]
+
+# SVI
+file_list_Gulf <- lapply(state_id_Gulf, function(state) {read.csv(file.path(data_path, paste0(state, ".csv")))})
+SVI_data_Gulf <- do.call(rbind, file_list_Gulf)
+SVI_data_Gulf = SVI_data_Gulf[, c("COUNTY", "RPL_THEMES", "ST_ABBR")]
+names(SVI_data_Gulf)[names(SVI_data_Gulf) == "COUNTY"] = "county_full"
+names(SVI_data_Gulf)[names(SVI_data_Gulf) == "ST_ABBR"] <- "state_id"
+names(SVI_data_Gulf)[names(SVI_data_Gulf) == "RPL_THEMES"] <- "SVI"
+
+file_list_Atlantic <- lapply(state_id_Atlantic, function(state) {read.csv(file.path(data_path, paste0(state, ".csv")))})
+SVI_data_Atlantic <- do.call(rbind, file_list_Atlantic)
+SVI_data_Atlantic = SVI_data_Atlantic[, c("COUNTY", "RPL_THEMES", "ST_ABBR")]
+names(SVI_data_Atlantic)[names(SVI_data_Atlantic) == "COUNTY"] <- "county_full"
+names(SVI_data_Atlantic)[names(SVI_data_Atlantic) == "ST_ABBR"] <- "state_id"
+names(SVI_data_Atlantic)[names(SVI_data_Atlantic) == "RPL_THEMES"] <- "SVI"
+
+
+# Combine Location and Population with SVI
+
+Data_Atlantic = inner_join(Data_Atlantic, SVI_data_Atlantic, by = c("county_full", "state_id"))
+Data_Gulf = inner_join(Data_Gulf, SVI_data_Gulf, by = c("county_full", "state_id"))
+write.csv(Data_Atlantic, file = "Data/Data_Atlantic.csv", row.names = FALSE)
+write.csv(Data_Gulf, file = "Data/Data_Gulf.csv", row.names = FALSE)
+
+```
 

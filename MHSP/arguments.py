@@ -17,7 +17,11 @@ class Arguments:
         
         # Tree
         self._parser.add_argument('--T', type=int, default=3, help='Number of stage')
-        self._parser.add_argument('--N', type=int, default=3, help='Number of state')
+        self._parser.add_argument('--N', type=int, default=16, help='Number of state')
+
+        self._parser.add_argument('--N_G', type=int, default=4, help='Number of state for Gulf')
+        self._parser.add_argument('--N_A', type=int, default=4, help='Number of state for Atlantic')
+
         self._parser.add_argument('--TN', type=int, default=7, help='number of node in tree')
         self._parser.add_argument('--initial_state', type=int, default=0, help='initial_state_root')
 
@@ -29,8 +33,8 @@ class Arguments:
         self._parser.add_argument('--s_factor', type=int, default=1, help='Shortage Factor')
 
         # Baseline deamand
-        self._parser.add_argument('--DTrailer', type=int, default=200, help='Shortage Factor')
-        self._parser.add_argument('--DMHU', type=int, default=50, help='Shortage Factor')
+        self._parser.add_argument('--DTrailer', type=int, default=200, help='Baseline deamand Trailer')
+        self._parser.add_argument('--DMHU', type=int, default=50, help='Baseline deamand MHU')
 
         # Stop_Criteria
         self._parser.add_argument('--MAX_ITER', type=int, default=100000, help='Shortage Factor')
@@ -40,27 +44,24 @@ class Arguments:
         self._parser.add_argument('--LB_TOL', type=float, default=1e-4, help='Shortage Factor')
 
         # Method
-        self._parser.add_argument('--Strategic_node', type=int, default=1, help='0: Extend Formulation 1: Benders Decompostion')
+        self._parser.add_argument('--Strategic_node_sovling', type=int, default=1, help='0: Extend Formulation 1: Benders Decompostion')
+        self._parser.add_argument('--Model', type=str, default="SDDP", help='SDDP/Extend/2SSP')
 
         # Debug
         self._parser.add_argument('--Cost_print', type=bool, default=False, help='0: Extend Formulation 1: Benders Decompostion')
 
-        
 
-
-        # Path
-        # self._parser.add_argument('--Deprivation_Penalty_path', type=str, default='data/Deprivation_Penalty.xlsx', help='Deprivation Cost Penalty Parameter')
-        # self._parser.add_argument('--House_Info_path', type=str, default='data/House_Info.xlsx', help='House Information')
-        # self._parser.add_argument('--House_Match', type=str, default='data/House_Match.xlsx', help='House Match')
-        # self._parser.add_argument('--Mismatch_Penalty_path', type=str, default='data/Mismatch_Penalty.xlsx', help='Mismatch Penalty Parameter')
-        # self._parser.add_argument('--Staging_Area_path', type=str, default='data/Staging_Area.xlsx', help='Staging Area Information/Parameter')
-        # self._parser.add_argument('--Study_Region_path', type=str, default='data/Study_Region.xlsx', help='Study Region Information/Parameter')
-        # self._parser.add_argument('--Demand_Trailer_path', type=str, default='test_data_3/trailer_50_3.txt', help='Study Region Information/Parameter')
-        # self._parser.add_argument('--Demand_MHU_path', type=str, default='test_data_3/MHU_50_1.txt', help='Study Region Information/Parameter')
-        # self._parser.add_argument('--Supplier_path', type=str, default='data/Supplier.xlsx', help='Supplier Information/Parameter')
-        # self._parser.add_argument('--Timepoint_path', type=str, default='data/Timepoint.xlsx', help='Three Time points')
-        # self._parser.add_argument('--Unmet_Penalty_path', type=str, default='data/Unmet_Penalty.xlsx', help='Unmet Penalty Parameter')
-        # self._parser.add_argument('--Unused_Inventory_Penalty_path', type=str, default='data/Unused_Inventory_Penalty.xlsx', help='Unused Inventory Penalty Penalty')
+        # Demand Generator Path
+        self._parser.add_argument('--Atlantic_month_dis', type=str, default='generator_data/Atlantic_month_dis.xlsx', help='Atlantic_month_dis file path')
+        self._parser.add_argument('--Atlantic_SS_dis', type=str, default='generator_data/Atlantic_SS_dis.xlsx', help='Atlantic_SS_dis file path')
+        self._parser.add_argument('--Data_Atlantic', type=str, default='generator_data/Data_Atlantic.csv', help='Data_Atlantic file path')
+        self._parser.add_argument('--Data_Gulf', type=str, default='generator_data/Data_Gulf.csv', help='Data_Gulf file path')
+        self._parser.add_argument('--Frequency', type=str, default='generator_data/Frequency.xlsx', help='Frequency file path')
+        self._parser.add_argument('--Gulf_month_dis', type=str, default='generator_data/Gulf_month_dis.xlsx', help='Gulf_month_dis file path')
+        self._parser.add_argument('--Gulf_SS_dis', type=str, default='generator_data/Gulf_SS_dis.xlsx', help='Gulf_SS_dis file path')
+        self._parser.add_argument('--Hurricane_landfall_Atlantic', type=str, default='generator_data/Hurricane_landfall_Atlantic.csv', help='Hurricane_landfall_Atlantic file path')
+        self._parser.add_argument('--Hurricane_landfall_Gulf', type=str, default='generator_data/Hurricane_landfall_Gulf.csv', help='Hurricane_landfall_Gulf file path')
+        self._parser.add_argument('--Regression_par', type=str, default='generator_data/Regression_par.xlsx', help='Regression_par file path')
 
 
 

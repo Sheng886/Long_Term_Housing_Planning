@@ -1,4 +1,4 @@
-from model import func, scenariotree
+from model import func, scenariotree, Scenario_Generator
 from arguments import Arguments
 import numpy as np
 import pandas as pd
@@ -12,46 +12,13 @@ import os.path
 class input_data_class:
     def __init__(self, args):
 
-        temp = 1
-        for t in range(args.T):
-            temp += args.N**(t+1)
-        args.TN = temp
 
-        # ### ------------------ demand ------------------------- ###
-        
-        # df_tree = pd.read_excel("scen_tree/tree_distmatrix.xlsx")
-        # df_tree = df_tree.iloc[: , 1:]
-        # tree_adj_matrix = df_tree.values.tolist()
-
-        # df_scen1 = pd.read_excel("scen_tree/tree_scen1.xlsx")
-        # df_scen2 = pd.read_excel("scen_tree/tree_scen2.xlsx")
-
-        # tree_pr = df_scen1["Pr"].values.tolist()
-        # temp = np.array(tree_pr)
-        # reshaped_temp = temp.reshape(args.TN, args.K)
-        # tree_pr = reshaped_temp.tolist()
-
-
-        # tree_demand1 = df_scen1.iloc[: , 3:].values.tolist()
-        # temp = np.array(tree_demand1)
-        # reshaped_temp = temp.reshape(7, args.K, args.M)
-        # tree_demand1 = reshaped_temp.tolist()
-
-        # tree_demand2 = df_scen2.iloc[: , 3:].values.tolist()
-        # temp = np.array(tree_demand2)
-        # reshaped_temp = temp.reshape(args.TN, args.K, args.M)
-        # tree_demand2 = reshaped_temp.tolist()
-
-        # self.tree = scenariotree.ScenarioTree(args.TN)
-        # self.tree._build_tree_red(tree_adj_matrix)
-        # self.tree._build_tree_black(tree_demand1,tree_demand2,tree_pr)
-        # # self.tree.print_tree_sce()
-        # # self.tree.print_tree_red()
-        
-
-        # pdb.set_trace()
-
+    
         ### ------------------ MC & Poisson --------------- ###
+
+        Scenario_Generator.main_generator(args)
+
+        pdb.set_trace()
 
         df_MC = pd.read_excel("scen_tree/MC.xlsx")
         df_MC = df_MC.iloc[: , 1:]
@@ -88,12 +55,20 @@ class input_data_class:
                         self.demand_root[k][1][m] = np.random.poisson(month_par[n][m], 1)*args.DMHU
 
 
-        self.tree = scenariotree.ScenarioTree(args, args.TN, self.demand_root)
-        self.tree._build_tree_red(self.MC_tran_matrix, self.demand)
+        temp = 1
+        for t in range(args.T):
+            temp += args.N**(t+1)
+        args.TN = temp
+
+
+        if(args.model == "2SSP" or args.model == "Extend"):
+            self.tree = scenariotree.ScenarioTree(args, args.TN, self.demand_root)
+            self.tree._build_tree_red(self.MC_tran_matrix, self.demand)
 
         # self.tree.print_tree_sce()
         # self.tree.print_tree_red()
         
+
 
 
         ### ------------------ Distance matrix ------------ ###

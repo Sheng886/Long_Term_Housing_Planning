@@ -896,9 +896,9 @@ class solve_SDDP:
             # print(sample_path)
 
             # ---------------------------------------------------- Forward ----------------------------------------------------
-            if(self.args.Strategic_node == 0):
+            if(self.args.Strategic_node_sovling == 0):
                 u,v,obj_ex = self.stage_root.forward_run()
-            elif(self.args.Strategic_node == 1):
+            elif(self.args.Strategic_node_sovling == 1):
                 u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_root.forward_run()
 
                 # Benders Cut Sharing
@@ -906,17 +906,17 @@ class solve_SDDP:
 
             
             for stage in range(self.args.T-1):
-                if(self.args.Strategic_node == 0):
+                if(self.args.Strategic_node_sovling == 0):
                     u,v,obj = self.stage[stage][sample_path[stage]].forward_run(u,v)
-                elif(self.args.Strategic_node == 1):
+                elif(self.args.Strategic_node_sovling == 1):
                     u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage[stage][sample_path[stage]].forward_run(u,v)
                     
                     # Benders Cut Sharing
                     self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,state=sample_path[stage],stage=stage)
             
-            if(self.args.Strategic_node == 0):
+            if(self.args.Strategic_node_sovling == 0):
                 u,v,obj = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
-            elif(self.args.Strategic_node == 1):
+            elif(self.args.Strategic_node_sovling == 1):
                 u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
                 
                 # Benders Cut Sharing
@@ -926,36 +926,36 @@ class solve_SDDP:
 
 
             # ----------------------------------- Backward -----------------------------------
-            if(self.args.Strategic_node == 0):
+            if(self.args.Strategic_node_sovling == 0):
                 pi_b,pi_c,pi_e,pi_h,cut_pi,LB = self.stage_leaf[sample_path[self.args.T-1]].backward_run()
-            elif(self.args.Strategic_node == 1):
+            elif(self.args.Strategic_node_sovling == 1):
                 pi_b,pi_c,Benders_cut_pi,LB = self.stage_leaf[sample_path[self.args.T-1]].backward_run(iter)
             
             for stage in reversed(range(self.args.T-1)):
 
                 # ---------------------------- Cut Sharing ----------------------------
                 for state in range(self.args.N):
-                    if(self.args.Strategic_node == 0):
+                    if(self.args.Strategic_node_sovling == 0):
                         cut_iter_temp = self.stage[stage][state].add_cut(LB,stage+1,sample_path[stage],sample_path[stage+1],pi_b,pi_c,pi_e,pi_h,cut_pi)
-                    elif(self.args.Strategic_node == 1):
+                    elif(self.args.Strategic_node_sovling == 1):
                         cut_iter_temp = self.stage[stage][state].add_cut(LB,stage+1,sample_path[stage],sample_path[stage+1],pi_b,pi_c,Benders_cut_pi)
                     
                     cutviol_iter = cutviol_iter + cut_iter_temp
 
-                if(self.args.Strategic_node == 0):
+                if(self.args.Strategic_node_sovling == 0):
                     pi_b,pi_c,pi_e,pi_h,cut_pi,LB =  self.stage[stage][sample_path[stage]].backward_run()
-                elif(self.args.Strategic_node == 1):
+                elif(self.args.Strategic_node_sovling == 1):
                     pi_b,pi_c,Benders_cut_pi,LB =  self.stage[stage][sample_path[stage]].backward_run(iter)
 
-            if(self.args.Strategic_node == 0):
+            if(self.args.Strategic_node_sovling == 0):
                 cut_iter_temp = self.stage_root.add_cut(LB,0,0,sample_path[0],pi_b,pi_c,pi_e,pi_h,cut_pi)
-            elif(self.args.Strategic_node == 1):
+            elif(self.args.Strategic_node_sovling == 1):
                 cut_iter_temp = self.stage_root.add_cut(LB,0,0,sample_path[0],pi_b,pi_c,Benders_cut_pi)
 
             cutviol_iter = cutviol_iter + cut_iter_temp
-            if(self.args.Strategic_node == 0):
+            if(self.args.Strategic_node_sovling == 0):
                 pi_b,pi_c,pi_e,pi_h,cut_pi,LB =  self.stage_root.backward_run()
-            elif(self.args.Strategic_node == 1):
+            elif(self.args.Strategic_node_sovling == 1):
                 pi_b,pi_c,LB,Benders_cut_pi =  self.stage_root.backward_run(iter)
 
             LB_list.append(LB)

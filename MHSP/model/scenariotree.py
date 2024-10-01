@@ -35,7 +35,7 @@ class ScenarioTree:
         self.args = args
 
 
-    def _build_tree_red(self    , MC_tran, demand):
+    def _build_tree_red(self, MC_tran, demand):
         
         queue = []
         queue.append(0)
