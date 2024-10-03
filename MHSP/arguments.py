@@ -16,7 +16,7 @@ class Arguments:
         self._parser.add_argument('--A', type=int, default=8, help='Number of Attribute')
         
         # Tree
-        self._parser.add_argument('--T', type=int, default=3, help='Number of stage')
+        self._parser.add_argument('--T', type=int, default=5, help='Number of stage')
         self._parser.add_argument('--N', type=int, default=16, help='Number of state')
 
         self._parser.add_argument('--N_G', type=int, default=4, help='Number of state for Gulf')
@@ -62,6 +62,7 @@ class Arguments:
         self._parser.add_argument('--Hurricane_landfall_Atlantic', type=str, default='generator_data/Hurricane_landfall_Atlantic.csv', help='Hurricane_landfall_Atlantic file path')
         self._parser.add_argument('--Hurricane_landfall_Gulf', type=str, default='generator_data/Hurricane_landfall_Gulf.csv', help='Hurricane_landfall_Gulf file path')
         self._parser.add_argument('--Regression_par', type=str, default='generator_data/Regression_par.xlsx', help='Regression_par file path')
+        self._parser.add_argument('--dataall', type=str, default='generator_data/Data_all.csv', help='Regression_par file path')
 
 
 

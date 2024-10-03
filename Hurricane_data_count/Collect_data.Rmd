@@ -138,15 +138,15 @@ bc$x[which(bc$y == max(bc$y))]
 bc <- boxcox(type2 ~ SVI + node1 + population + SS_scale, data = data_all)
 bc$x[which(bc$y == max(bc$y))]
 
-model1 = lm(type1^(0.1818182) ~ SVI + node1 + population + SS_scale, data = data_all)
+model1 = lm(type1^(0.17900578267425277) ~ SVI + node1 + population + SS_scale, data = data_all)
 summary(model1)
 model2 = lm(type2^(0.1414141) ~ SVI + node1 + population + SS_scale, data = data_all)
 summary(model2)
 ```
 ```{r}
 # Collect socioeconomic Data
-state_id_Gulf = c("TX","LA","MS","AL","GA","FL")
-state_id_Atlantic = c("SC","NC","GA","FL")
+state_id_Gulf = c("TX","LA","MS","AL","FL")
+state_id_Atlantic = c("SC","NC","FL")
 
 data_path = "Data"
 

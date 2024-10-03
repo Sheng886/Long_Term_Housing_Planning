@@ -47,7 +47,7 @@ class input_data_class:
         for n in range(args.N):
             for m in range(args.M):
                 for k in range(args.K):
-                    if(m ==0):
+                    if(m == 0):
                         self.demand_root[k][0][m] = 0
                         self.demand_root[k][1][m] = 0
                     else:
