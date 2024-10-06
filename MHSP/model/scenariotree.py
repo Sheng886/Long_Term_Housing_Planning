@@ -52,7 +52,6 @@ class ScenarioTree:
                 if(stage_temp < self.args.T):
                     queue.append(current_count)
                     
-
                 self.node_all[node].add_child_red(current_count,MC_tran[self.node_all[node].state][n])
                 name = f"t={stage_temp},n={n}"
                 temp_node = ScenarioNode_red(name=name,state=n, stage=stage_temp, parent=node,to_node=self.node_all[node].prob_to_node*MC_tran[self.node_all[node].state][n], demand=demand[stage_temp-1][n])

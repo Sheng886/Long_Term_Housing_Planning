@@ -1,4 +1,4 @@
-from model import func, scenariotree, Scenario_Generator
+from model import func, scenariotree
 from arguments import Arguments
 import numpy as np
 import pandas as pd
@@ -16,74 +16,51 @@ class input_data_class:
     
         ### ------------------ MC & Poisson --------------- ###
 
-        Scenario_Generator.main_generator(args)
 
-        pdb.set_trace()
 
-        df_MC = pd.read_excel("scen_tree/MC.xlsx")
-        df_MC = df_MC.iloc[: , 1:]
-        self.MC_tran_matrix = df_MC.values.tolist()
+        self.MC_tran_matrix = np.load(args.MC_trans_path)
+        self.demand = np.load(args.demand_path)
+        self.demand_root = np.load(args.demand_root_path)
 
-        df_month_par = pd.read_excel("scen_tree/Hurricane_month.xlsx")
-        df_month_par = df_month_par.iloc[: , 1:]
-        temp = np.array(df_month_par)
-        reshaped_temp = temp.reshape(args.N, args.M)
-        month_par = reshaped_temp.tolist()
+        name_without_extension = args.MC_trans_path.split('.')[0]
+        info = name_without_extension.split('_')
 
-        self.demand = np.zeros((args.T,args.N,args.K,args.G,args.M+1))
-        self.demand_root = np.zeros((args.K,args.G,args.M+1))
-
-        for t in range(args.T):
-            for n in range(args.N):
-                for m in range(args.M):
-                    for k in range(args.K):
-                        if(m == 0):
-                            self.demand[t][n][k][0][m] = 0
-                            self.demand[t][n][k][1][m] = 0
-                        else:
-                            self.demand[t][n][k][0][m] = np.random.poisson(month_par[n][m], 1)*args.DTrailer
-                            self.demand[t][n][k][1][m] = np.random.poisson(month_par[n][m], 1)*args.DMHU
-
-        for n in range(args.N):
-            for m in range(args.M):
-                for k in range(args.K):
-                    if(m == 0):
-                        self.demand_root[k][0][m] = 0
-                        self.demand_root[k][1][m] = 0
-                    else:
-                        self.demand_root[k][0][m] = np.random.poisson(month_par[n][m], 1)*args.DTrailer
-                        self.demand_root[k][1][m] = np.random.poisson(month_par[n][m], 1)*args.DMHU
-
+        args.T = int(info[4])
+        args.N = int(info[6])
+        args.J = int(info[8])
+        args.M = int(info[10])
+        args.K = int(info[12])
 
         temp = 1
         for t in range(args.T):
             temp += args.N**(t+1)
         args.TN = temp
 
+        # pdb.set_trace()
 
-        if(args.model == "2SSP" or args.model == "Extend"):
+        if(args.Model == "2SSP" or args.Model == "Extend"):
             self.tree = scenariotree.ScenarioTree(args, args.TN, self.demand_root)
             self.tree._build_tree_red(self.MC_tran_matrix, self.demand)
 
         # self.tree.print_tree_sce()
         # self.tree.print_tree_red()
         
-
+        # pdb.set_trace()
 
 
         ### ------------------ Distance matrix ------------ ###
 
-        df_Staging_Area_loc = pd.read_excel("data/Staging_Area_loc.xlsx")
-        df_Study_Region_loc = pd.read_excel("data/Study_Region_loc.xlsx")
-        df_Suppy_node_loc = pd.read_excel("data/Suppy_node_loc.xlsx")
+        # df_Staging_Area_loc = pd.read_excel("data/Staging_Area_loc.xlsx")
+        # df_Study_Region_loc = pd.read_excel("data/Study_Region_loc.xlsx")
+        # df_Suppy_node_loc = pd.read_excel("data/Suppy_node_loc.xlsx")
 
-        name_column_loc = list(df_Staging_Area_loc.columns)
-        df_Staging_Area_loc = df_Staging_Area_loc[['latitude','longitude']]
-        df_Study_Region_loc = df_Study_Region_loc[['latitude','longitude']]
-        df_Suppy_node_loc = df_Suppy_node_loc[['latitude','longitude']]
+        # name_column_loc = list(df_Staging_Area_loc.columns)
+        # df_Staging_Area_loc = df_Staging_Area_loc[['latitude','longitude']]
+        # df_Study_Region_loc = df_Study_Region_loc[['latitude','longitude']]
+        # df_Suppy_node_loc = df_Suppy_node_loc[['latitude','longitude']]
 
-        self.wj_dis = func.distance_matrix(df_Staging_Area_loc,df_Study_Region_loc)
-        self.iw_dis = func.distance_matrix(df_Suppy_node_loc,df_Staging_Area_loc)
+        # self.wj_dis = func.distance_matrix(df_Staging_Area_loc,df_Study_Region_loc)
+        # self.iw_dis = func.distance_matrix(df_Suppy_node_loc,df_Staging_Area_loc)
 
 
         # ### ------------------ Transportation price ------------------ ### 
@@ -135,13 +112,6 @@ class input_data_class:
             self.E_w[w] = df_Cap_w["Etend_price"][w]
 
 
-        # ### ------------------Study Region ------------------ ###
-        self.J_pro = np.zeros((args.J))
-
-        df_j_pro = pd.read_excel("scen_tree/region_prob.xlsx")
-
-        for j in range(args.J):
-            self.J_pro[j] = df_j_pro.iloc[0][j]
 
 
         # pdb.set_trace()

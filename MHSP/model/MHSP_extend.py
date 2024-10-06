@@ -129,7 +129,7 @@ class baseline_class():
                 for m in range(1,args.M+1):
                     for j in range(args.J):
                         for g in range(args.G):
-                            self.model.addConstr(quicksum(self.fk[n,k,m,w,j,p,g] for w in range(args.W) for p in range(args.P)) + self.sk[n,k,m,j,g] == self.tree[n].demand[k][g][m]*self.idata.J_pro[j])
+                            self.model.addConstr(quicksum(self.fk[n,k,m,w,j,p,g] for w in range(args.W) for p in range(args.P)) + self.sk[n,k,m,j,g] == self.tree[n].demand[k][m][j][g])
 
 
         # Assumption Replensih by MHS

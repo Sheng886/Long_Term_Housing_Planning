@@ -172,13 +172,40 @@ names(SVI_data_Atlantic)[names(SVI_data_Atlantic) == "COUNTY"] <- "county_full"
 names(SVI_data_Atlantic)[names(SVI_data_Atlantic) == "ST_ABBR"] <- "state_id"
 names(SVI_data_Atlantic)[names(SVI_data_Atlantic) == "RPL_THEMES"] <- "SVI"
 
+```
 
+```{r}
+county_HRI_table = read.csv("Data/NRI_Table_Counties.csv")
+Gulf_risk_data = county_HRI_table[county_HRI_table$STATEABBRV %in% state_id_Gulf, ]
+Atlantic_risk_data = county_HRI_table[county_HRI_table$STATEABBRV %in% state_id_Atlantic, ]
+
+Gulf_risk_data = Gulf_risk_data[Gulf_risk_data$HRCN_HLRR %in% c('Very High', 'Relatively High'), ]
+Atlantic_risk_data = Atlantic_risk_data[Atlantic_risk_data$HRCN_HLRR %in% c('Very High', 'Relatively High'), ]
+
+Gulf_risk_data = Gulf_risk_data[,c("STATEABBRV","COUNTY","COUNTYTYPE","HRCN_HLRR")]
+Gulf_risk_data$county_full = paste(Gulf_risk_data$COUNTY, Gulf_risk_data$COUNTYTYPE)
+Gulf_risk_data <- Gulf_risk_data %>%rename(state_id = STATEABBRV)
+
+Atlantic_risk_data = Atlantic_risk_data[,c("STATEABBRV","COUNTY","COUNTYTYPE","HRCN_HLRR")]
+Atlantic_risk_data$county_full = paste(Atlantic_risk_data$COUNTY, Atlantic_risk_data$COUNTYTYPE)
+Atlantic_risk_data <- Atlantic_risk_data %>%rename(state_id = STATEABBRV)
+
+```
+
+
+
+```{r}
 # Combine Location and Population with SVI
 
 Data_Atlantic = inner_join(Data_Atlantic, SVI_data_Atlantic, by = c("county_full", "state_id"))
 Data_Gulf = inner_join(Data_Gulf, SVI_data_Gulf, by = c("county_full", "state_id"))
-write.csv(Data_Atlantic, file = "Data/Data_Atlantic.csv", row.names = FALSE)
-write.csv(Data_Gulf, file = "Data/Data_Gulf.csv", row.names = FALSE)
+
+Gulf_df = merge(Data_Gulf, Gulf_risk_data, by = c("county_full", "state_id"))
+Atlantic_df = merge(Data_Atlantic, Atlantic_risk_data, by = c("county_full", "state_id"))
+
+
+write.csv(Atlantic_df, file = "Data/Data_Atlantic.csv", row.names = FALSE)
+write.csv(Gulf_df, file = "Data/Data_Gulf.csv", row.names = FALSE)
 
 ```
 

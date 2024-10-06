@@ -9,6 +9,7 @@ import pdb
 
 
 cut_vio_thred = 1e-5
+time_limit = 3600*4
 
 class subporblem():
     def __init__(self, args, input_data):
@@ -116,7 +117,7 @@ class subporblem():
         for m in range(1,args.M+1):
             for j in range(args.J):
                 for g in range(args.G):
-                    self.l_Demand_Flow_cons[m][j][g].setAttr(GRB.Attr.RHS, self.tree[n].demand[k][g][m]*self.idata.J_pro[j])
+                    self.l_Demand_Flow_cons[m][j][g].setAttr(GRB.Attr.RHS, self.tree[n].demand[k][m][j][g])
 
         # Assumption Replensih by MHS
         for w in range(args.W):
@@ -155,7 +156,7 @@ class subporblem():
             for j in range(args.J):
                 for g in range(args.G):
                     pi_l[m][j][g] = self.l_Demand_Flow_cons[m][j][g].pi
-                    temp = temp + pi_l[m][j][g]*self.tree[n].demand[k][g][m]*self.idata.J_pro[j]
+                    temp = temp + pi_l[m][j][g]*self.tree[n].demand[k][m][j][g]
 
         for w in range(args.W):
             for p in range(args.P):
@@ -232,6 +233,7 @@ class Benders():
     def run(self,args):
 
         self.master.setParam("OutputFlag", 0)
+        self.master.setParam('TimeLimit', time_limit)
         
         itr = 0
 
@@ -257,7 +259,7 @@ class Benders():
                         self.master.addConstr(self.theta[n,k] >= quicksum(self.v[n,w,p]*pi_f[w][p] for w in range(args.W) for p in range(args.P)) 
                                                                 + quicksum(self.idata.B_i[i]*pi_i[m][i] for m in range(args.M+1) for i in range(args.I))
                                                                 + quicksum(self.u[n,w]*pi_k[m][w] for m in range(args.M+1) for w in range(args.W))
-                                                                + quicksum(self.tree[n].demand[k][g][m]*self.idata.J_pro[j]*pi_l[m][j][g] for m in range(1,args.M+1) for j in range(args.J) for g in range(args.G))
+                                                                + quicksum(self.tree[n].demand[k][m][j][g]*pi_l[m][j][g] for m in range(1,args.M+1) for j in range(args.J) for g in range(args.G))
                                                                 + quicksum(self.v[n,w,p]*pi_m[w][p] for w in range(args.W) for p in range(args.P)))
 
             UB_temp = sum(self.tree[n].prob_to_node*(sum(self.idata.E_w[w]*self.y[n,w].x for w in range(args.W)) 

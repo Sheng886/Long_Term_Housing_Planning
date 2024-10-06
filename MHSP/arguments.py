@@ -45,10 +45,15 @@ class Arguments:
 
         # Method
         self._parser.add_argument('--Strategic_node_sovling', type=int, default=1, help='0: Extend Formulation 1: Benders Decompostion')
-        self._parser.add_argument('--Model', type=str, default="SDDP", help='SDDP/Extend/2SSP')
+        self._parser.add_argument('--Model', type=str, default="Extend", help='SDDP/Extend/2SSP')
 
         # Debug
         self._parser.add_argument('--Cost_print', type=bool, default=False, help='0: Extend Formulation 1: Benders Decompostion')
+
+        # Demand path
+        self._parser.add_argument('--demand_path', type=str, default='demand_data/Demand_Stage_3_States_9_Study_499_month_6_K_3.npy', help='Demand')
+        self._parser.add_argument('--demand_root_path', type=str, default='demand_data/Root_Demand_Stage_3_States_9_Study_499_month_6_K_3.npy', help='Demand_root')
+        self._parser.add_argument('--MC_trans_path', type=str, default='demand_data/MC_trans_Stage_3_States_9_Study_499_month_6_K_3.npy', help='MC_trans')
 
 
         # Demand Generator Path

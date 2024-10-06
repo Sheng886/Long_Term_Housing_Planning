@@ -215,6 +215,13 @@ def main_generator(args):
 
     for n in range(args.N):    
         MC_trans.append(state_state_pro)
+
+    MC_trans_np = np.array(MC_trans)
+
+    # pdb.set_trace()
+
+
+
     
     # Demand Generator--------------------------------------------------------------
     # Step 1 distribute the numbers to the month by month distribution -------------
@@ -350,14 +357,17 @@ def main_generator(args):
 
                     study_region_demand_np = study_region_demand[['type1','type2']].to_numpy()
 
-                    if(t == 0):
+                    if(t == args.T):
                          demand_root[k][m] = study_region_demand_np
                     else:
                         demand[t][n_index][k][m] = study_region_demand_np
         print(f"Stage {t} is generated")
 
-    filename = "Demand_Stage_" + str(args.T) + "_States_" + str(args.N) + "_Study_" + str(args.J) + "_month_" + str(args.M) + "_K_" + str(args.K)
-    filename_root = "Root_Demand_Stage_" + str(args.T) + "_States_" + str(args.N) + "_Study_" + str(args.J) + "_month_" + str(args.M) + "_K_" + str(args.K)
+    filename = "demand_data/Demand_Stage_" + str(args.T) + "_States_" + str(args.N) + "_Study_" + str(args.J) + "_month_" + str(args.M) + "_K_" + str(args.K)
+    filename_root = "demand_data/Root_Demand_Stage_" + str(args.T) + "_States_" + str(args.N) + "_Study_" + str(args.J) + "_month_" + str(args.M) + "_K_" + str(args.K)
+    filename_mc= "demand_data/MC_trans_Stage_" + str(args.T) + "_States_" + str(args.N) + "_Study_" + str(args.J) + "_month_" + str(args.M) + "_K_" + str(args.K)
+    
+    np.save(f'{filename_mc}.npy', MC_trans_np)
     np.save(f'{filename}.npy', demand)
     np.save(f'{filename_root}.npy', demand_root)
 

@@ -14,16 +14,21 @@ if __name__ == '__main__':
     args = Arguments().parser().parse_args()
     input_data = inpu_data.input_data_class(args)
 
-
-    MHSP_extend = MHSP_extend.baseline_class(args, input_data)
-    MHSP_extend.run(args)
-
-    MHSP_Benders_sub = MHSP_Benders.subporblem(args, input_data)
-    MHSP_Benders = MHSP_Benders.Benders(args, input_data,MHSP_Benders_sub)
-    MHSP_Benders.run(args)
-
-    MHSP_SDDP = MHSP_SDDP.solve_SDDP(args, input_data)
-    MHSP_SDDP.run()
+    start_time = time.time()
+    if(args.Model == "Extend"):
+        MHSP_extend = MHSP_extend.baseline_class(args, input_data)
+        MHSP_extend.run(args)
+    elif(args.Model == "2SSP"):
+        MHSP_Benders_sub = MHSP_Benders.subporblem(args, input_data)
+        MHSP_Benders = MHSP_Benders.Benders(args, input_data,MHSP_Benders_sub)
+        MHSP_Benders.run(args)
+    elif(args.Model == "SDDP"):
+        MHSP_SDDP = MHSP_SDDP.solve_SDDP(args, input_data)
+        MHSP_SDDP.run()
+    end_time = time.time()
+    print("Model:",args.Model)
+    time_taken = end_time - start_time
+    print(f"Time taken: {time_taken:.4f} seconds")
 
     # MHSP_SDDP_Benders = MHSP_SDDP_Benders.solve_SDDP(args, input_data)
     # MHSP_SDDP_Benders.run()

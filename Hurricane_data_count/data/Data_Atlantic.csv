@@ -1,214 +1,118 @@
-"state_id","county_full","lng","lat","population","SVI"
-"FL","Miami-Dade County",-80.5624,25.615,2688237,0.8939
-"FL","Broward County",-80.4871,26.1523,1940907,0.8636
-"FL","Palm Beach County",-80.4655,26.6476,1494805,0.803
-"FL","Hillsborough County",-82.3088,27.9292,1468560,0.6667
-"FL","Orange County",-81.3235,28.5144,1427403,0.8182
-"NC","Wake County",-78.6503,35.7903,1132103,0.1616
-"NC","Mecklenburg County",-80.8328,35.2467,1115403,0.5152
-"FL","Duval County",-81.6715,30.3313,995708,0.697
-"FL","Pinellas County",-82.7255,27.9198,959918,0.3182
-"FL","Lee County",-81.8332,26.578,772902,0.4394
-"FL","Polk County",-81.6976,27.9489,736229,0.8485
-"FL","Brevard County",-80.7323,28.2937,610723,0.1364
-"FL","Pasco County",-82.392,28.3092,569211,0.3636
-"FL","Volusia County",-81.1819,29.0584,558520,0.3485
-"NC","Guilford County",-79.7889,36.0795,539557,0.6465
-"SC","Greenville County",-82.3706,34.8941,528251,0.2444
-"FL","Seminole County",-81.2363,28.717,471321,0.1515
-"FL","Sarasota County",-82.3315,27.1845,439392,0.0758
-"SC","Richland County",-80.9031,34.0218,416161,0.5333
-"SC","Charleston County",-79.953,32.8348,409840,0.1333
-"FL","Manatee County",-82.3153,27.4719,405069,0.303
-"FL","Osceola County",-81.1495,28.0626,393745,0.7424
-"FL","Lake County",-81.7113,28.7615,386829,0.2727
-"NC","Forsyth County",-80.2563,36.1306,383739,0.6869
-"FL","Collier County",-81.3474,26.1108,380221,0.3788
-"FL","Marion County",-82.0567,29.2102,378225,0.6212
-"SC","Horry County",-78.9969,33.9216,356578,0.3556
-"NC","Cumberland County",-78.8277,35.0487,335207,0.8283
-"FL","St. Lucie County",-80.4721,27.3773,334682,0.5909
-"SC","Spartanburg County",-81.9908,34.9309,330119,0.4
-"NC","Durham County",-78.8766,36.036,325101,0.596
-"FL","Escambia County",-87.363,30.669,321296,0.6061
-"SC","Lexington County",-81.2722,33.9023,295934,0.0889
-"FL","Leon County",-84.2779,30.458,294128,0.4091
-"SC","York County",-81.1845,34.9748,282987,0
-"FL","Alachua County",-82.3577,29.6747,279729,0.2879
-"FL","St. Johns County",-81.4407,29.9016,278722,0
-"NC","Buncombe County",-82.5301,35.6112,269449,0.3535
-"NC","Union County",-80.5307,34.9884,240109,0.0303
-"SC","Berkeley County",-79.9522,33.1973,231419,0.2
-"NC","Gaston County",-81.1803,35.2944,228972,0.3636
-"NC","New Hanover County",-77.8848,34.2329,228134,0.202
-"NC","Cabarrus County",-80.5519,35.3868,226396,0.2222
-"FL","Clay County",-81.8579,29.9831,219650,0.1061
-"NC","Johnston County",-78.3657,35.5178,219042,0.3333
-"FL","Okaloosa County",-86.5917,30.6913,212021,0.2121
-"SC","Anderson County",-82.6378,34.5193,204592,0.1778
-"NC","Onslow County",-77.4322,34.7322,203686,0.5657
-"FL","Hernando County",-82.424,28.5537,196621,0.3333
-"FL","Charlotte County",-81.9114,26.9058,189900,0.1818
-"SC","Beaufort County",-80.7306,32.3857,189071,0.0667
-"FL","Santa Rosa County",-87.0219,30.7004,188994,0.0606
-"NC","Iredell County",-80.8734,35.8071,187839,0.101
-"FL","Bay County",-85.6203,30.2652,181055,0.4545
-"NC","Alamance County",-79.3995,36.0437,171779,0.4141
-"NC","Pitt County",-77.3745,35.5933,171196,0.7374
-"SC","Aiken County",-81.6347,33.5443,169865,0.2222
-"NC","Davidson County",-80.2128,35.7933,169498,0.2929
-"SC","Dorchester County",-80.4068,33.0794,162139,0.3111
-"NC","Catawba County",-81.2151,35.662,161011,0.4343
-"FL","Indian River County",-80.6064,27.6943,160986,0.1667
-"FL","Martin County",-80.4315,27.0775,159399,0.1212
-"FL","Citrus County",-82.4794,28.8489,155173,0.197
-"NC","Rowan County",-80.5247,35.6394,147067,0.6667
-"NC","Orange County",-79.1207,36.0611,145919,0.1919
-"NC","Randolph County",-79.806,35.7103,144403,0.4747
-"NC","Brunswick County",-78.2383,34.0715,139721,0.0101
-"SC","Florence County",-79.703,34.0245,137015,0.4889
-"NC","Harnett County",-78.8693,35.3689,134718,0.4949
-"FL","Sumter County",-82.081,28.7048,131832,0.0303
-"SC","Pickens County",-82.7253,34.8873,131106,0.1556
-"NC","Robeson County",-79.1039,34.6402,117573,0.9899
-"FL","Flagler County",-81.3136,29.4614,117515,0.0909
-"NC","Wayne County",-78.004,35.364,117480,0.8889
-"NC","Henderson County",-82.48,35.3363,116469,0.2424
-"SC","Sumter County",-80.3822,33.9162,105199,0.6
-"FL","Highlands County",-81.341,27.3433,102339,0.7576
-"NC","Craven County",-77.0939,35.1249,101098,0.5253
-"NC","Moore County",-79.4814,35.3106,100759,0.0707
-"NC","Cleveland County",-81.5555,35.3341,99527,0.7172
-"SC","Lancaster County",-80.7054,34.6867,97611,0.0444
-"NC","Nash County",-77.9864,35.9673,95015,0.7475
-"FL","Nassau County",-81.8019,30.6107,91538,0.0152
-"NC","Rockingham County",-79.775,36.396,91209,0.6869
-"NC","Lincoln County",-81.2235,35.4856,87933,0.0202
-"NC","Burke County",-81.7048,35.7496,87799,0.4848
-"SC","Orangeburg County",-80.8003,33.439,84159,0.7778
-"FL","Monroe County",-81.1089,25.3192,82044,0.3939
-"NC","Caldwell County",-81.5464,35.953,80716,0.4545
-"SC","Oconee County",-83.0659,34.7535,78775,0.3333
-"NC","Wilson County",-77.9187,35.7051,78667,0.8687
-"NC","Chatham County",-79.2554,35.7026,76754,0.0404
-"FL","Walton County",-86.1697,30.6436,76618,0.2576
-"FL","Putnam County",-81.7443,29.6087,73604,0.9394
-"NC","Surry County",-80.688,36.4146,71429,0.6768
-"FL","Columbia County",-82.6215,30.2242,69832,0.7727
-"NC","Franklin County",-78.2857,36.0828,69680,0.404
-"SC","Greenwood County",-82.1259,34.1537,69309,0.5111
-"NC","Carteret County",-76.6589,34.8357,68353,0.1111
-"SC","Laurens County",-82.0057,34.4834,67456,0.6444
-"NC","Wilkes County",-81.163,36.2062,66125,0.5556
-"SC","Kershaw County",-80.5902,34.3388,65779,0.0222
-"NC","Rutherford County",-81.9198,35.4026,64680,0.6566
-"SC","Georgetown County",-79.3327,33.4343,63594,0.1111
-"NC","Lee County",-79.1715,35.4752,63560,0.7879
-"SC","Darlington County",-79.9577,34.3325,63025,0.6222
-"NC","Stanly County",-80.251,35.3119,62723,0.3838
-"NC","Haywood County",-82.9822,35.556,62152,0.0808
-"NC","Pender County",-77.9052,34.5249,61592,0.3131
-"NC","Granville County",-78.6527,36.304,61161,0.3939
-"NC","Sampson County",-78.3714,34.9916,59317,0.9091
-"SC","Cherokee County",-81.6206,35.0481,56200,0.4444
-"NC","Lenoir County",-77.6413,35.2388,55071,1
-"NC","Watauga County",-81.6964,36.2311,54540,0.2121
-"NC","Hoke County",-79.2373,35.0175,52612,0.7778
-"NC","Columbus County",-78.655,34.2657,50827,0.8485
-"NC","Duplin County",-77.933,34.9365,49312,0.8586
-"NC","Edgecombe County",-77.5971,35.9129,49067,0.8788
-"NC","Halifax County",-77.6517,36.2574,48772,0.9596
-"FL","Jackson County",-85.2155,30.7954,47704,0.5
-"NC","Beaufort County",-76.8598,35.494,44711,0.6263
-"NC","Stokes County",-80.2397,36.4019,44696,0.1818
-"NC","McDowell County",-82.0493,35.6817,44629,0.6061
-"FL","Suwannee County",-82.9915,30.1956,43881,0.6818
-"FL","Gadsden County",-84.6136,30.5795,43746,0.9091
-"SC","Chesterfield County",-80.1587,34.6398,43536,0.8
-"FL","Levy County",-82.7434,29.3184,43268,0.5152
-"NC","Richmond County",-79.7479,35.0059,43149,0.9394
-"NC","Davie County",-80.5445,35.9291,43030,0.1212
-"NC","Vance County",-78.4079,36.3649,42492,0.9293
-"NC","Jackson County",-83.1408,35.2876,42388,0.6162
-"NC","Pasquotank County",-76.2843,36.2955,40454,0.5253
-"FL","Hendry County",-81.1659,26.5535,39902,0.9848
-"FL","Okeechobee County",-80.8886,27.3864,39870,0.9242
-"NC","Person County",-78.9718,36.39,39131,0.2727
-"SC","Colleton County",-80.667,32.8637,38561,0.8222
-"SC","Newberry County",-81.6001,34.2898,37918,0.4667
-"NC","Yadkin County",-80.6652,36.1605,37280,0.4444
-"NC","Dare County",-75.7988,35.7824,37160,0.0909
-"NC","Macon County",-83.4222,35.1505,37088,0.303
-"NC","Alexander County",-81.177,35.921,36505,0.2626
-"FL","DeSoto County",-81.8095,27.1864,34258,1
-"NC","Scotland County",-79.4804,34.8409,34222,0.9798
-"FL","Wakulla County",-84.4007,30.1673,33732,0.0455
-"NC","Transylvania County",-82.7982,35.2021,33131,0.2525
-"SC","Chester County",-81.1595,34.692,32171,0.3778
-"SC","Clarendon County",-80.2164,33.6658,31163,0.8667
-"SC","Williamsburg County",-79.7277,33.6199,30879,0.9778
-"NC","Bladen County",-78.5637,34.6146,29807,0.6364
-"SC","Jasper County",-81.0317,32.4375,29444,0.6889
-"SC","Marion County",-79.3625,34.0801,29212,0.7333
-"NC","Cherokee County",-84.0635,35.1339,28868,0.1414
-"NC","Currituck County",-76.0079,36.405,28616,0
-"SC","Dillon County",-79.3789,34.3915,28255,0.9556
-"FL","Baker County",-82.2846,30.3311,27969,0.2273
-"FL","Bradford County",-82.1687,29.95,27816,0.7273
-"SC","Union County",-81.6191,34.6895,27158,0.7111
-"NC","Ashe County",-81.5004,36.4341,26759,0.1717
-"SC","Marlboro County",-79.6786,34.602,26585,0.7556
-"SC","Edgefield County",-81.9664,33.7722,26181,0.5556
-"NC","Montgomery County",-79.9055,35.3325,25839,0.7071
-"FL","Hardee County",-81.81,27.4927,25528,0.9697
-"FL","Washington County",-85.6653,30.6106,25014,0.5758
-"SC","Abbeville County",-82.4593,34.2226,24368,0.2667
-"NC","Caswell County",-79.3335,36.3932,22747,0.4646
-"NC","Anson County",-80.1027,34.9738,22200,0.899
-"NC","Martin County",-77.1092,35.8432,21992,0.798
-"NC","Hertford County",-76.982,36.3591,21633,0.8384
-"FL","Taylor County",-83.6035,30.047,21421,0.5303
-"NC","Madison County",-82.7058,35.858,21414,0.1313
-"SC","Fairfield County",-81.1212,34.3951,20942,0.6667
-"SC","Barnwell County",-81.4349,33.2661,20653,0.8444
-"NC","Greene County",-77.6758,35.485,20407,0.9697
-"NC","Polk County",-82.1697,35.2793,19538,0.0606
-"FL","Holmes County",-85.814,30.8679,19529,0.5455
-"SC","Saluda County",-81.7268,34.0061,18952,0.5778
-"SC","Hampton County",-81.1407,32.7763,18890,0.9111
-"NC","Warren County",-78.1067,36.3965,18803,0.9495
-"NC","Yancey County",-82.3076,35.8989,18538,0.2828
-"FL","Gilchrist County",-82.8004,29.7258,18070,0.4697
-"FL","Madison County",-83.4701,30.4441,17986,0.6364
-"NC","Bertie County",-76.9788,36.0663,17818,0.9192
-"NC","Avery County",-81.9226,36.0765,17679,0.4242
-"NC","Northampton County",-77.3969,36.4178,17528,0.7576
-"FL","Dixie County",-83.1587,29.6086,16737,0.5606
-"SC","Lee County",-80.2545,34.1633,16557,0.9333
-"FL","Union County",-82.3714,30.0439,15524,0.4848
-"FL","Gulf County",-85.2263,29.9565,15002,0.2424
-"NC","Mitchell County",-82.1636,36.0133,14989,0.3232
-"FL","Jefferson County",-83.8953,30.4375,14458,0.4242
-"SC","Calhoun County",-80.7803,33.6749,14145,0.4222
-"NC","Swain County",-83.4928,35.4868,14130,0.8182
-"NC","Chowan County",-76.6079,36.1508,13835,0.5051
-"FL","Calhoun County",-85.1972,30.406,13753,0.7121
-"FL","Hamilton County",-82.9479,30.4964,13492,0.9545
-"SC","Bamberg County",-81.0542,33.2148,13311,0.8889
-"NC","Perquimans County",-76.4411,36.2059,13053,0.3737
-"NC","Pamlico County",-76.7407,35.1434,12317,0.3434
-"FL","Franklin County",-84.8137,29.8766,12276,0.7879
-"FL","Glades County",-81.189,26.9564,12179,0.8788
-"NC","Clay County",-83.7502,35.0572,11186,0.2323
-"NC","Washington County",-76.5775,35.8225,11051,0.7677
-"NC","Alleghany County",-81.127,36.4916,10989,0.5758
-"NC","Camden County",-76.208,36.3891,10547,0.0505
-"NC","Gates County",-76.7005,36.4449,10509,0.1515
-"SC","McCormick County",-82.3099,33.8995,9612,0.2889
-"NC","Jones County",-77.3552,35.0217,9263,0.5455
-"FL","Lafayette County",-83.1811,29.9855,8107,0.8333
-"SC","Allendale County",-81.3582,32.9881,8073,1
-"NC","Graham County",-83.8335,35.3502,8047,0.5859
-"FL","Liberty County",-84.8829,30.2413,7704,0.6515
-"NC","Hyde County",-76.2517,35.5306,4636,0.8081
-"NC","Tyrrell County",-76.209,35.8172,3389,0.7273
+"county_full","state_id","lng","lat","population","SVI","COUNTY","COUNTYTYPE","HRCN_HLRR"
+"Alachua County","FL",-82.3577,29.6747,279729,0.2879,"Alachua","County","Relatively High"
+"Allendale County","SC",-81.3582,32.9881,8073,1,"Allendale","County","Very High"
+"Anson County","NC",-80.1027,34.9738,22200,0.899,"Anson","County","Relatively High"
+"Bamberg County","SC",-81.0542,33.2148,13311,0.8889,"Bamberg","County","Relatively High"
+"Barnwell County","SC",-81.4349,33.2661,20653,0.8444,"Barnwell","County","Relatively High"
+"Bay County","FL",-85.6203,30.2652,181055,0.4545,"Bay","County","Very High"
+"Beaufort County","NC",-76.8598,35.494,44711,0.6263,"Beaufort","County","Very High"
+"Beaufort County","SC",-80.7306,32.3857,189071,0.0667,"Beaufort","County","Very High"
+"Berkeley County","SC",-79.9522,33.1973,231419,0.2,"Berkeley","County","Very High"
+"Bertie County","NC",-76.9788,36.0663,17818,0.9192,"Bertie","County","Very High"
+"Bladen County","NC",-78.5637,34.6146,29807,0.6364,"Bladen","County","Very High"
+"Bradford County","FL",-82.1687,29.95,27816,0.7273,"Bradford","County","Relatively High"
+"Brevard County","FL",-80.7323,28.2937,610723,0.1364,"Brevard","County","Very High"
+"Broward County","FL",-80.4871,26.1523,1940907,0.8636,"Broward","County","Relatively High"
+"Brunswick County","NC",-78.2383,34.0715,139721,0.0101,"Brunswick","County","Very High"
+"Calhoun County","FL",-85.1972,30.406,13753,0.7121,"Calhoun","County","Relatively High"
+"Camden County","NC",-76.208,36.3891,10547,0.0505,"Camden","County","Relatively High"
+"Carteret County","NC",-76.6589,34.8357,68353,0.1111,"Carteret","County","Very High"
+"Charleston County","SC",-79.953,32.8348,409840,0.1333,"Charleston","County","Very High"
+"Charlotte County","FL",-81.9114,26.9058,189900,0.1818,"Charlotte","County","Very High"
+"Chesterfield County","SC",-80.1587,34.6398,43536,0.8,"Chesterfield","County","Relatively High"
+"Chowan County","NC",-76.6079,36.1508,13835,0.5051,"Chowan","County","Relatively High"
+"Citrus County","FL",-82.4794,28.8489,155173,0.197,"Citrus","County","Very High"
+"Clarendon County","SC",-80.2164,33.6658,31163,0.8667,"Clarendon","County","Relatively High"
+"Colleton County","SC",-80.667,32.8637,38561,0.8222,"Colleton","County","Very High"
+"Collier County","FL",-81.3474,26.1108,380221,0.3788,"Collier","County","Very High"
+"Columbia County","FL",-82.6215,30.2242,69832,0.7727,"Columbia","County","Relatively High"
+"Columbus County","NC",-78.655,34.2657,50827,0.8485,"Columbus","County","Relatively High"
+"Craven County","NC",-77.0939,35.1249,101098,0.5253,"Craven","County","Very High"
+"Currituck County","NC",-76.0079,36.405,28616,0,"Currituck","County","Relatively High"
+"Dare County","NC",-75.7988,35.7824,37160,0.0909,"Dare","County","Very High"
+"DeSoto County","FL",-81.8095,27.1864,34258,1,"DeSoto","County","Very High"
+"Dillon County","SC",-79.3789,34.3915,28255,0.9556,"Dillon","County","Very High"
+"Dixie County","FL",-83.1587,29.6086,16737,0.5606,"Dixie","County","Relatively High"
+"Dorchester County","SC",-80.4068,33.0794,162139,0.3111,"Dorchester","County","Very High"
+"Duplin County","NC",-77.933,34.9365,49312,0.8586,"Duplin","County","Very High"
+"Escambia County","FL",-87.363,30.669,321296,0.6061,"Escambia","County","Very High"
+"Flagler County","FL",-81.3136,29.4614,117515,0.0909,"Flagler","County","Relatively High"
+"Florence County","SC",-79.703,34.0245,137015,0.4889,"Florence","County","Relatively High"
+"Franklin County","FL",-84.8137,29.8766,12276,0.7879,"Franklin","County","Relatively High"
+"Gadsden County","FL",-84.6136,30.5795,43746,0.9091,"Gadsden","County","Relatively High"
+"Gates County","NC",-76.7005,36.4449,10509,0.1515,"Gates","County","Relatively High"
+"Georgetown County","SC",-79.3327,33.4343,63594,0.1111,"Georgetown","County","Very High"
+"Gilchrist County","FL",-82.8004,29.7258,18070,0.4697,"Gilchrist","County","Relatively High"
+"Glades County","FL",-81.189,26.9564,12179,0.8788,"Glades","County","Very High"
+"Greene County","NC",-77.6758,35.485,20407,0.9697,"Greene","County","Very High"
+"Gulf County","FL",-85.2263,29.9565,15002,0.2424,"Gulf","County","Very High"
+"Halifax County","NC",-77.6517,36.2574,48772,0.9596,"Halifax","County","Relatively High"
+"Hamilton County","FL",-82.9479,30.4964,13492,0.9545,"Hamilton","County","Relatively High"
+"Hampton County","SC",-81.1407,32.7763,18890,0.9111,"Hampton","County","Very High"
+"Hardee County","FL",-81.81,27.4927,25528,0.9697,"Hardee","County","Relatively High"
+"Hendry County","FL",-81.1659,26.5535,39902,0.9848,"Hendry","County","Relatively High"
+"Hernando County","FL",-82.424,28.5537,196621,0.3333,"Hernando","County","Relatively High"
+"Hertford County","NC",-76.982,36.3591,21633,0.8384,"Hertford","County","Very High"
+"Highlands County","FL",-81.341,27.3433,102339,0.7576,"Highlands","County","Relatively High"
+"Hillsborough County","FL",-82.3088,27.9292,1468560,0.6667,"Hillsborough","County","Relatively High"
+"Holmes County","FL",-85.814,30.8679,19529,0.5455,"Holmes","County","Very High"
+"Horry County","SC",-78.9969,33.9216,356578,0.3556,"Horry","County","Very High"
+"Hyde County","NC",-76.2517,35.5306,4636,0.8081,"Hyde","County","Very High"
+"Indian River County","FL",-80.6064,27.6943,160986,0.1667,"Indian River","County","Very High"
+"Jackson County","FL",-85.2155,30.7954,47704,0.5,"Jackson","County","Relatively High"
+"Jasper County","SC",-81.0317,32.4375,29444,0.6889,"Jasper","County","Very High"
+"Jefferson County","FL",-83.8953,30.4375,14458,0.4242,"Jefferson","County","Relatively High"
+"Jones County","NC",-77.3552,35.0217,9263,0.5455,"Jones","County","Very High"
+"Lafayette County","FL",-83.1811,29.9855,8107,0.8333,"Lafayette","County","Very High"
+"Lee County","FL",-81.8332,26.578,772902,0.4394,"Lee","County","Very High"
+"Lee County","SC",-80.2545,34.1633,16557,0.9333,"Lee","County","Relatively High"
+"Lenoir County","NC",-77.6413,35.2388,55071,1,"Lenoir","County","Very High"
+"Leon County","FL",-84.2779,30.458,294128,0.4091,"Leon","County","Relatively High"
+"Levy County","FL",-82.7434,29.3184,43268,0.5152,"Levy","County","Relatively High"
+"Liberty County","FL",-84.8829,30.2413,7704,0.6515,"Liberty","County","Relatively High"
+"Madison County","FL",-83.4701,30.4441,17986,0.6364,"Madison","County","Relatively High"
+"Manatee County","FL",-82.3153,27.4719,405069,0.303,"Manatee","County","Very High"
+"Marion County","FL",-82.0567,29.2102,378225,0.6212,"Marion","County","Relatively High"
+"Marion County","SC",-79.3625,34.0801,29212,0.7333,"Marion","County","Very High"
+"Martin County","FL",-80.4315,27.0775,159399,0.1212,"Martin","County","Very High"
+"Martin County","NC",-77.1092,35.8432,21992,0.798,"Martin","County","Very High"
+"Miami-Dade County","FL",-80.5624,25.615,2688237,0.8939,"Miami-Dade","County","Relatively High"
+"Monroe County","FL",-81.1089,25.3192,82044,0.3939,"Monroe","County","Very High"
+"Montgomery County","NC",-79.9055,35.3325,25839,0.7071,"Montgomery","County","Relatively High"
+"Nassau County","FL",-81.8019,30.6107,91538,0.0152,"Nassau","County","Relatively High"
+"New Hanover County","NC",-77.8848,34.2329,228134,0.202,"New Hanover","County","Very High"
+"Newberry County","SC",-81.6001,34.2898,37918,0.4667,"Newberry","County","Relatively High"
+"Northampton County","NC",-77.3969,36.4178,17528,0.7576,"Northampton","County","Relatively High"
+"Okaloosa County","FL",-86.5917,30.6913,212021,0.2121,"Okaloosa","County","Very High"
+"Okeechobee County","FL",-80.8886,27.3864,39870,0.9242,"Okeechobee","County","Relatively High"
+"Onslow County","NC",-77.4322,34.7322,203686,0.5657,"Onslow","County","Very High"
+"Orangeburg County","SC",-80.8003,33.439,84159,0.7778,"Orangeburg","County","Relatively High"
+"Palm Beach County","FL",-80.4655,26.6476,1494805,0.803,"Palm Beach","County","Very High"
+"Pamlico County","NC",-76.7407,35.1434,12317,0.3434,"Pamlico","County","Very High"
+"Pasco County","FL",-82.392,28.3092,569211,0.3636,"Pasco","County","Relatively High"
+"Pasquotank County","NC",-76.2843,36.2955,40454,0.5253,"Pasquotank","County","Relatively High"
+"Pender County","NC",-77.9052,34.5249,61592,0.3131,"Pender","County","Very High"
+"Perquimans County","NC",-76.4411,36.2059,13053,0.3737,"Perquimans","County","Relatively High"
+"Pinellas County","FL",-82.7255,27.9198,959918,0.3182,"Pinellas","County","Relatively High"
+"Pitt County","NC",-77.3745,35.5933,171196,0.7374,"Pitt","County","Relatively High"
+"Polk County","FL",-81.6976,27.9489,736229,0.8485,"Polk","County","Relatively High"
+"Putnam County","FL",-81.7443,29.6087,73604,0.9394,"Putnam","County","Relatively High"
+"Robeson County","NC",-79.1039,34.6402,117573,0.9899,"Robeson","County","Relatively High"
+"Sampson County","NC",-78.3714,34.9916,59317,0.9091,"Sampson","County","Very High"
+"Santa Rosa County","FL",-87.0219,30.7004,188994,0.0606,"Santa Rosa","County","Relatively High"
+"Sarasota County","FL",-82.3315,27.1845,439392,0.0758,"Sarasota","County","Very High"
+"Scotland County","NC",-79.4804,34.8409,34222,0.9798,"Scotland","County","Relatively High"
+"St. Johns County","FL",-81.4407,29.9016,278722,0,"St. Johns","County","Relatively High"
+"St. Lucie County","FL",-80.4721,27.3773,334682,0.5909,"St. Lucie","County","Very High"
+"Sumter County","FL",-82.081,28.7048,131832,0.0303,"Sumter","County","Relatively High"
+"Suwannee County","FL",-82.9915,30.1956,43881,0.6818,"Suwannee","County","Relatively High"
+"Taylor County","FL",-83.6035,30.047,21421,0.5303,"Taylor","County","Relatively High"
+"Tyrrell County","NC",-76.209,35.8172,3389,0.7273,"Tyrrell","County","Very High"
+"Union County","FL",-82.3714,30.0439,15524,0.4848,"Union","County","Relatively High"
+"Volusia County","FL",-81.1819,29.0584,558520,0.3485,"Volusia","County","Relatively High"
+"Walton County","FL",-86.1697,30.6436,76618,0.2576,"Walton","County","Very High"
+"Warren County","NC",-78.1067,36.3965,18803,0.9495,"Warren","County","Relatively High"
+"Washington County","FL",-85.6653,30.6106,25014,0.5758,"Washington","County","Very High"
+"Washington County","NC",-76.5775,35.8225,11051,0.7677,"Washington","County","Very High"
+"Wayne County","NC",-78.004,35.364,117480,0.8889,"Wayne","County","Relatively High"
+"Williamsburg County","SC",-79.7277,33.6199,30879,0.9778,"Williamsburg","County","Very High"
