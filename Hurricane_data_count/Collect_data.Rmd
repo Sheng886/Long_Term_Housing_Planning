@@ -145,8 +145,11 @@ summary(model2)
 ```
 ```{r}
 # Collect socioeconomic Data
-state_id_Gulf = c("TX","LA","MS","AL","FL")
-state_id_Atlantic = c("SC","NC","FL")
+#state_id_Gulf = c("TX","LA","MS","AL","FL")
+#state_id_Atlantic = c("SC","NC","FL")
+
+state_id_Gulf = c("FL")
+state_id_Atlantic = c("FL")
 
 data_path = "Data"
 
