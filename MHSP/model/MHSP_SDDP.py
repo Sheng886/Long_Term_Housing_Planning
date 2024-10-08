@@ -1001,114 +1001,59 @@ class solve_SDDP:
                 print("total time:", Elapsed)
 
                 # ---------------------------------------------------- Polciy Simulation ----------------------------------------------------
-                solution = []
                 
-                if(self.args.Strategic_node_sovling == 0):                    
-                    u_pre,v_pre,obj_ex = self.stage_root.forward_run()
-               
-                elif(self.args.Strategic_node_sovling == 1):
-                    u_pre,v_pre,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_root.forward_run()
-
-                u = sum(u_pre[w] for w in range(self.args.W))
-                v = sum(u_pre[w][p] for w in range(self.args.W) for p in range(self.args.P))
-
-                solution.append([0,0,0,u,v])
-
-                    
+                simulate_iter = 1000
+                solution_u = np.zeros((self.arg.T+1,self.args.N))
+                solution_v = np.zeros((self.arg.T+1,self.args.N))
+                solution_obj = np.zeros((self.arg.T+1,self.args.N))
 
 
-               sol_u = np.zeros((self.args.T+1, self.args.N, self.args.N,))
-               sol_v 
-                
-                for stage in range(self.args.T-1):
+                for iter in range(simulate_iter):
 
-                    temp_pre_state = []
-                    
-                    for pre_state in range(self.args.N):
+                    # sample path
+                    sample_path = self.sample_path(self.args)
+                    # print(sample_path)
 
-                        if(stage == 0):
-                            u = u_pre
-                            v = v_pre
-                            for state in range(self.args.N):
-                                if(self.args.Strategic_node_sovling == 0):
-                                    u,v,obj = self.stage[stage][state].forward_run(u,v)
-                                    temp_pre_state.append((u,v,obj))
-
-                                elif(self.args.Strategic_node_sovling == 1):
-                                    u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage[stage][state].forward_run(u,v)
-                                    temp_pre_state.append((u,v,obj))
-                            break                               
-                        
-                        else:
-                            for state in range(self.args.N):
-                                u = temp_sol_stage[stage-1][given_state][0]
-                                v = temp_sol_stage[stage-1][given_state][1]
-
-                                if(self.args.Strategic_node_sovling == 0):
-                                    u,v,obj = self.stage[stage][state].forward_run(u,v)
-                                    temp_give_state.append((u,v,obj))
-
-                                elif(self.args.Strategic_node_sovling == 1):
-                                    u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage[stage][state].forward_run(u,v)
-                                    temp_give_state.append((u,v,obj))
-                        temp_sol_state.append(temp_give_state)
-                    
-                    temp_sol_stage.append(temp_sol_state)
-
-                temp_give_leaf_sol = []
-                
-                for state in range(self.args.N):
-
-                    u = temp_sol_stage[self.args.T-2][state][0]
-                    v = temp_sol_stage[self.args.T-2][state][1]
-
+                    # ---------------------------------------------------- Forward ----------------------------------------------------
                     if(self.args.Strategic_node_sovling == 0):
-                        u,v,obj = self.stage_leaf[state].forward_run(u,v)
-                        
-                        temp_give_leaf_sol.append((u,v,obj))
+                        u,v,obj_ex = self.stage_root.forward_run()
 
                     elif(self.args.Strategic_node_sovling == 1):
-                        u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_leaf[state].forward_run(u,v)
-                        temp_give_leaf_sol.append((u,v,obj_ex))
+                        u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_root.forward_run()
+
+                    solution_u[0][self.args.initial_state] = sum(u[w].x for w in range(self.args.W))
+                    solution_v[0][self.args.initial_state] = sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+                    solution_obj[0][self.args.initial_state] = obj_ex
 
                     
+                    for stage in range(self.args.T-1):
+                        if(self.args.Strategic_node_sovling == 0):
+                            u,v,obj = self.stage[stage][sample_path[stage]].forward_run(u,v)
+                        elif(self.args.Strategic_node_sovling == 1):
+                            u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage[stage][sample_path[stage]].forward_run(u,v)
+                        
+                        solution_u[stage+1][sample_path[stage]] = sum(u[w].x for w in range(self.args.W))
+                        solution_v[stage+1][sample_path[stage]] = sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+                        solution_obj[stage+1][sample_path[stage]] = obj_ex
+
+                    
+                    if(self.args.Strategic_node_sovling == 0):
+                        u,v,obj_ex = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
+                    elif(self.args.Strategic_node_sovling == 1):
+                        u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
+                        
+                        solution_u[self.args.T][sample_path[self.args.T-1]] = sum(u[w].x for w in range(self.args.W))
+                        solution_v[self.args.T][sample_path[self.args.T-1]] = sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+                        solution_obj[self.args.T][sample_path[self.args.T-1]] = obj_ex
+
+
                 solution = []
-                    
+                for t in range(self.args.T+1):
+                    for n in range(self.args.N):
+                        solution.append([t,n,solution_u[t][n],solution_v[t][n],solution_obj[t][n]])
                 
-                u = temp_give_root_sol[0][0]
-                v = temp_give_root_sol[0][1]
-
-                u = sum(u[w] for w in range(self.args.W))
-                v = sum(v[w][p] for w in range(self.args.W) for p in range(self.args.P))
-
-                #             stage/pre_state/state/u/v
-                solution.append([0,0,0,u,v])
-
-
-                for t in range(self.args.T-1):
-                    for n_pre in range(self.args.N):
-                        for n in range(self.args.N):
-                            u = temp_sol_stage[stage][n_pre][n][0]
-                            v = temp_sol_stage[stage][n_pre][n][1]
-
-                            u = sum(u[w] for w in range(self.args.W))
-                            v = sum(v[w][p] for w in range(self.args.W) for p in range(self.args.P))
-
-                            #             stage/pre_state/state/u/v
-                            solution.append([t+1,n,w,u,y,v,x,z])
                 
-                for n in range(self.args.N):
-                    for w in range(self.args.W):
-                        u = self.stage_leaf[n].u_value[w]
-                        y = self.stage_leaf[n].y_value[w]
-                        v = sum(self.stage_leaf[n].v_value[w][p] for p in range(self.args.P))
-                        x = sum(self.stage_leaf[n].x_value[w][p] for p in range(self.args.P))
-                        z = sum(self.stage_leaf[n].z_value[w][p] for p in range(self.args.P))
-
-                        #                     t/n/w/u/y/v/x/z
-                        solution.append([self.args.T,n,w,u,y,v,x,z])
-                
-                df = pd.DataFrame(solution, columns=[ 'stage','state','w','u','y','v','x','z'])
+                df = pd.DataFrame(solution, columns=[ 'stage','state','Staging Area Capacity','Inventory Level','obj'])
                 filename = "result_Stage_" + str(self.args.T) + "_States_" + str(self.args.N) + "_Study_" + str(self.args.J) + "_month_" + str(self.args.M)  + "_K_" + str(self.args.K)  + "_Pp_" + str(self.args.P_p_factor) + "_Cu_" + str(self.args.C_u_factor) + "_Op_" +  str(self.args.O_p_factor)
 
                 df.to_csv(f'{filename}.csv', index=False) 
