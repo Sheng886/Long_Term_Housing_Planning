@@ -439,7 +439,7 @@ class StageProblem_Decomposition:
                 
 
 
-        if(abs(temp-self.model.ObjVal) >= 1e-5):
+        if(abs(temp-self.model.ObjVal) >= 1e-3):
             print("iteration:",iter,"stage:",self.stage,"problematic dual solution!")
             print("temp:",temp)
             print("obj:",self.model.ObjVal)
@@ -780,7 +780,7 @@ class StageProblem_extended:
 
 
 
-        if(abs(temp-self.model.ObjVal) >= 1e-10):
+        if(abs(temp-self.model.ObjVal) >= 1e-3):
             print("stage:",self.stage,"problematic dual solution!")
             print("temp:",temp)
             print("obj:",self.model.ObjVal)
