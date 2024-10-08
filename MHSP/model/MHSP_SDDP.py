@@ -1003,9 +1003,9 @@ class solve_SDDP:
                 # ---------------------------------------------------- Polciy Simulation ----------------------------------------------------
                 
                 simulate_iter = 1000
-                solution_u = np.zeros((self.arg.T+1,self.args.N))
-                solution_v = np.zeros((self.arg.T+1,self.args.N))
-                solution_obj = np.zeros((self.arg.T+1,self.args.N))
+                solution_u = np.zeros((self.args.T+1,self.args.N))
+                solution_v = np.zeros((self.args.T+1,self.args.N))
+                solution_obj = np.zeros((self.args.T+1,self.args.N))
 
 
                 for iter in range(simulate_iter):
