@@ -22,6 +22,12 @@ class input_data_class:
         self.demand = np.load(args.demand_path)
         self.demand_root = np.load(args.demand_root_path)
 
+        sum_result = np.sum(self.demand, axis=(3,4,5))
+
+        # Print the shape and the result
+        # print("Shape of the result after summing first three dimensions:", sum_result.shape)
+        # print("Summation result:", sum_result)
+
         name_without_extension = args.MC_trans_path.split('.')[0]
         info = name_without_extension.split('_')
 
@@ -72,17 +78,20 @@ class input_data_class:
         self.O_p = np.zeros((args.P))
         self.R_p = np.zeros((args.P))
 
+        
+
 
         df_House_info = pd.read_excel("data/House_Info.xlsx")
 
         for p in range(args.P):
-            self.P_p[p] = df_House_info.iloc[0][p+1]
-            self.O_p[p] = df_House_info.iloc[1][p+1]
+            # self.P_p[p] = args.P_p_factor*df_House_info.iloc[0][p+1]
+            self.P_p[p] = args.P_p_factor*2
+            # self.O_p[p] = args.O_p_factor*df_House_info.iloc[1][p+1]
+            self.O_p[p] = args.O_p_factor*1000
             self.R_p[p] = df_House_info.iloc[2][p+1]
 
-
-
-        
+            print("P:", self.P_p[p])
+            print("R:", self.R_p[p])
 
         # ### ------------------Supply ------------------ ###
         self.B_i = np.zeros((args.I))
@@ -98,7 +107,10 @@ class input_data_class:
         df_CU_g = pd.read_excel("data/Victim_Info.xlsx")
 
         for g in range(args.G):
-            self.CU_g[g] = df_CU_g.iloc[0][g+1]
+            # self.CU_g[g] = args.C_u_factor*df_CU_g.iloc[0][g+1]
+            self.CU_g[g] = args.C_u_factor*100*self.O_p[g]
+
+            print(self.CU_g[g])
 
 
         # ### ------------------Staging Area Capacity ------------------ ###
@@ -110,6 +122,11 @@ class input_data_class:
         for w in range(args.W):
             self.Cap_w[w]  = df_Cap_w["Capacity"][w]
             self.E_w[w] = df_Cap_w["Etend_price"][w]
+
+            print("Cap_w:", df_Cap_w["Capacity"][w])
+            print("E_w:", df_Cap_w["Etend_price"][w])
+
+            
 
 
 

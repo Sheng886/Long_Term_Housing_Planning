@@ -54,7 +54,7 @@ class subproblem:
         # Production Leadtime (assume 1 month lead time)
         for m in range(1,args.M+1):
             for i in range(args.I):
-                self.sub.addConstr(self.bk[m-1,i] + quicksum(self.ak[m,i,w,p] for p in range(args.P) for w in range(args.W)) ==  self.bk[m,i] + quicksum(self.ak[m-self.idata.P_p[p],i,w,p] for p in range(args.P) for w in range(args.W) if m-self.idata.P_p[p] > 0))
+                self.sub.addConstr(self.bk[m-1,i] + quicksum(self.ak[m,i,w,p] for p in range(args.P) for w in range(args.W) if m+self.idata.P_p[p] <= args.M) ==  self.bk[m,i] + quicksum(self.ak[m-self.idata.P_p[p],i,w,p] for p in range(args.P) for w in range(args.W) if m-self.idata.P_p[p] >= 0))
 
         # Production Capacity E_i
         # Dual
@@ -77,7 +77,7 @@ class subproblem:
         for m in range(1,args.M+1):
             for w in range(args.W):
                 for p in range(args.P):
-                    if(m-self.idata.P_p[p] > 0):
+                    if(m-self.idata.P_p[p] >= 0):
                         self.sub.addConstr(self.vk[m-1,w,p] + quicksum(self.ak[m-self.idata.P_p[p],i,w,p] for i in range(args.I)) == self.vk[m,w,p] + quicksum(self.fk[m,w,j,p,g] for j in range(args.J) for g in range(args.G)))
                     else:
                         self.sub.addConstr(self.vk[m-1,w,p]  == self.vk[m,w,p] + quicksum(self.fk[m,w,j,p,g] for j in range(args.J) for g in range(args.G)))
@@ -622,7 +622,7 @@ class StageProblem_extended:
         for k in range(args.K):
             for m in range(1,args.M+1):
                 for i in range(args.I):
-                    self.model.addConstr(self.bk[k,m-1,i] + quicksum(self.ak[k,m,i,w,p] for p in range(args.P) for w in range(args.W)) ==  self.bk[k,m,i] + quicksum(self.ak[k,m-self.idata.P_p[p],i,w,p] for p in range(args.P) for w in range(args.W) if m-self.idata.P_p[p] > 0))
+                    self.model.addConstr(self.bk[k,m-1,i] + quicksum(self.ak[k,m,i,w,p] for p in range(args.P) for w in range(args.W) if m+self.idata.P_p[p] <= args.M) ==  self.bk[k,m,i] + quicksum(self.ak[k,m-self.idata.P_p[p],i,w,p] for p in range(args.P) for w in range(args.W) if m-self.idata.P_p[p] >= 0))
 
         # Production Capacity E_i
         # Dual
@@ -645,7 +645,7 @@ class StageProblem_extended:
             for m in range(1,args.M+1):
                 for w in range(args.W):
                     for p in range(args.P):
-                        if(m-self.idata.P_p[p] > 0):
+                        if(m-self.idata.P_p[p] >= 0):
                             self.model.addConstr(self.vk[k,m-1,w,p] + quicksum(self.ak[k,m-self.idata.P_p[p],i,w,p] for i in range(args.I)) == self.vk[k,m,w,p] + quicksum(self.fk[k,m,w,j,p,g] for j in range(args.J) for g in range(args.G)))
                         else:
                             self.model.addConstr(self.vk[k,m-1,w,p]  == self.vk[k,m,w,p] + quicksum(self.fk[k,m,w,j,p,g] for j in range(args.J) for g in range(args.G)))
@@ -780,7 +780,7 @@ class StageProblem_extended:
 
 
 
-        if(abs(temp-self.model.ObjVal) >= 1e-5):
+        if(abs(temp-self.model.ObjVal) >= 1e-10):
             print("stage:",self.stage,"problematic dual solution!")
             print("temp:",temp)
             print("obj:",self.model.ObjVal)
@@ -999,36 +999,103 @@ class solve_SDDP:
             if flag != 0:
                 train_time = Elapsed
                 print("total time:", Elapsed)
+
+                # ---------------------------------------------------- Polciy Simulation ----------------------------------------------------
+                solution = []
                 
-                u = 0
-                y = 0
-                v = 0
-                x = 0
-                z = 0 
+                if(self.args.Strategic_node_sovling == 0):                    
+                    u_pre,v_pre,obj_ex = self.stage_root.forward_run()
+               
+                elif(self.args.Strategic_node_sovling == 1):
+                    u_pre,v_pre,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_root.forward_run()
+
+                u = sum(u_pre[w] for w in range(self.args.W))
+                v = sum(u_pre[w][p] for w in range(self.args.W) for p in range(self.args.P))
+
+                solution.append([0,0,0,u,v])
+
+                    
+
+
+               sol_u = np.zeros((self.args.T+1, self.args.N, self.args.N,))
+               sol_v 
+                
+                for stage in range(self.args.T-1):
+
+                    temp_pre_state = []
+                    
+                    for pre_state in range(self.args.N):
+
+                        if(stage == 0):
+                            u = u_pre
+                            v = v_pre
+                            for state in range(self.args.N):
+                                if(self.args.Strategic_node_sovling == 0):
+                                    u,v,obj = self.stage[stage][state].forward_run(u,v)
+                                    temp_pre_state.append((u,v,obj))
+
+                                elif(self.args.Strategic_node_sovling == 1):
+                                    u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage[stage][state].forward_run(u,v)
+                                    temp_pre_state.append((u,v,obj))
+                            break                               
+                        
+                        else:
+                            for state in range(self.args.N):
+                                u = temp_sol_stage[stage-1][given_state][0]
+                                v = temp_sol_stage[stage-1][given_state][1]
+
+                                if(self.args.Strategic_node_sovling == 0):
+                                    u,v,obj = self.stage[stage][state].forward_run(u,v)
+                                    temp_give_state.append((u,v,obj))
+
+                                elif(self.args.Strategic_node_sovling == 1):
+                                    u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage[stage][state].forward_run(u,v)
+                                    temp_give_state.append((u,v,obj))
+                        temp_sol_state.append(temp_give_state)
+                    
+                    temp_sol_stage.append(temp_sol_state)
+
+                temp_give_leaf_sol = []
+                
+                for state in range(self.args.N):
+
+                    u = temp_sol_stage[self.args.T-2][state][0]
+                    v = temp_sol_stage[self.args.T-2][state][1]
+
+                    if(self.args.Strategic_node_sovling == 0):
+                        u,v,obj = self.stage_leaf[state].forward_run(u,v)
+                        
+                        temp_give_leaf_sol.append((u,v,obj))
+
+                    elif(self.args.Strategic_node_sovling == 1):
+                        u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_leaf[state].forward_run(u,v)
+                        temp_give_leaf_sol.append((u,v,obj_ex))
+
+                    
                 solution = []
                     
-                for w in range(self.args.W):
-                    u = self.stage_root.u_value[w]
-                    y = self.stage_root.y_value[w]
-                    v = sum(self.stage_root.v_value[w][p] for p in range(self.args.P))
-                    x = sum(self.stage_root.x_value[w][p] for p in range(self.args.P))
-                    z = sum(self.stage_root.z_value[w][p] for p in range(self.args.P))
+                
+                u = temp_give_root_sol[0][0]
+                v = temp_give_root_sol[0][1]
 
-                    #             stage/initial state    /w/u/y/v/x/z
-                    solution.append([0,self.args.initial_state,w,u,y,v,x,z])
+                u = sum(u[w] for w in range(self.args.W))
+                v = sum(v[w][p] for w in range(self.args.W) for p in range(self.args.P))
+
+                #             stage/pre_state/state/u/v
+                solution.append([0,0,0,u,v])
 
 
                 for t in range(self.args.T-1):
-                    for n in range(self.args.N):
-                        for w in range(self.args.W):
-                            u = self.stage[t][n].u_value[w]
-                            y = self.stage[t][n].y_value[w]
-                            v = sum(self.stage[t][n].v_value[w][p] for p in range(self.args.P))
-                            x = sum(self.stage[t][n].x_value[w][p] for p in range(self.args.P))
-                            z = sum(self.stage[t][n].z_value[w][p] for p in range(self.args.P))
+                    for n_pre in range(self.args.N):
+                        for n in range(self.args.N):
+                            u = temp_sol_stage[stage][n_pre][n][0]
+                            v = temp_sol_stage[stage][n_pre][n][1]
 
-                            #                t/n/w/u/y/v/x/z
-                            solution.append([t,n,w,u,y,v,x,z])
+                            u = sum(u[w] for w in range(self.args.W))
+                            v = sum(v[w][p] for w in range(self.args.W) for p in range(self.args.P))
+
+                            #             stage/pre_state/state/u/v
+                            solution.append([t+1,n,w,u,y,v,x,z])
                 
                 for n in range(self.args.N):
                     for w in range(self.args.W):
@@ -1042,7 +1109,8 @@ class solve_SDDP:
                         solution.append([self.args.T,n,w,u,y,v,x,z])
                 
                 df = pd.DataFrame(solution, columns=[ 'stage','state','w','u','y','v','x','z'])
-                filename = "result_Stage_" + str(args.T) + "_States_" + str(args.N) + "_Study_" + str(args.J) + "_month_" + str(args.M) + "_K_" + str(args.K)
+                filename = "result_Stage_" + str(self.args.T) + "_States_" + str(self.args.N) + "_Study_" + str(self.args.J) + "_month_" + str(self.args.M)  + "_K_" + str(self.args.K)  + "_Pp_" + str(self.args.P_p_factor) + "_Cu_" + str(self.args.C_u_factor) + "_Op_" +  str(self.args.O_p_factor)
+
                 df.to_csv(f'{filename}.csv', index=False) 
                 break
 

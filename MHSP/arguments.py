@@ -69,6 +69,11 @@ class Arguments:
         self._parser.add_argument('--Regression_par', type=str, default='generator_data/Regression_par.xlsx', help='Regression_par file path')
         self._parser.add_argument('--dataall', type=str, default='generator_data/Data_all.csv', help='Regression_par file path')
 
+        # Factor
+        self._parser.add_argument('--P_p_factor', type=float, default=1, help='Production Factor')
+        self._parser.add_argument('--C_u_factor', type=float, default=1, help='Unmet Factor')
+        self._parser.add_argument('--O_p_factor', type=float, default=1, help='Acquire Factor')
+
 
 
 

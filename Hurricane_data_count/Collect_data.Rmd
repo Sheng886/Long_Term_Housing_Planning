@@ -143,6 +143,7 @@ summary(model1)
 model2 = lm(type2^(0.1414141) ~ SVI + node1 + population + SS_scale, data = data_all)
 summary(model2)
 ```
+
 ```{r}
 # Collect socioeconomic Data
 #state_id_Gulf = c("TX","LA","MS","AL","FL")

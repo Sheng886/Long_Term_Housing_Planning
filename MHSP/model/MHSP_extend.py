@@ -40,10 +40,9 @@ class baseline_class():
         self.model.setObjective(quicksum(self.tree[n].prob_to_node*(quicksum(self.idata.E_w[w]*self.y[n,w] for w in range(args.W)) 
                                                                   + quicksum(self.idata.O_p[p]*(self.x[n,w,p] - self.idata.R_p[p]*self.z[n,w,p]) for w in range(args.W) for p in range(args.P))
                                                                   + (1/(args.K))*quicksum((quicksum(self.idata.O_p[p]*self.aak[n,k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[n,k,w,p] for w in range(args.W) for p in range(args.P)) 
-                                                                              + quicksum(quicksum(self.idata.O_p[p]*self.ak[n,k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
-                                                                              + quicksum(self.idata.CU_g[g]*self.sk[n,k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1))) for k in range(args.K))) 
+                                                                               + quicksum(quicksum(self.idata.O_p[p]*self.ak[n,k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
+                                                                                        + quicksum(self.idata.CU_g[g]*self.sk[n,k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1))) for k in range(args.K))) 
                                 for n in range(args.TN)), GRB.MINIMIZE);
-
 
 
         # Staging Area Capacity
@@ -92,7 +91,7 @@ class baseline_class():
             for k in range(args.K):
                 for m in range(1,args.M+1):
                     for i in range(args.I):
-                        self.model.addConstr(self.bk[n,k,m-1,i] + quicksum(self.ak[n,k,m,i,w,p] for p in range(args.P) for w in range(args.W)) ==  self.bk[n,k,m,i] + quicksum(self.ak[n,k,m-self.idata.P_p[p],i,w,p] for p in range(args.P) for w in range(args.W) if m-self.idata.P_p[p] > 0))
+                        self.model.addConstr(self.bk[n,k,m-1,i] + quicksum(self.ak[n,k,m,i,w,p] for p in range(args.P) for w in range(args.W) if m+self.idata.P_p[p] <= args.M) ==  self.bk[n,k,m,i] + quicksum(self.ak[n,k,m-self.idata.P_p[p],i,w,p] for p in range(args.P) for w in range(args.W) if m-self.idata.P_p[p] >= 0))
 
         # Production Capacity E_i
         for n in range(args.TN):
@@ -116,12 +115,13 @@ class baseline_class():
                 for m in range(1,args.M+1):
                     for w in range(args.W):
                         for p in range(args.P):
-                            if(m-self.idata.P_p[p] > 0):
+                            if(m-self.idata.P_p[p] >= 0):
                                 self.model.addConstr(self.vk[n,k,m-1,w,p] + quicksum(self.ak[n,k,m-self.idata.P_p[p],i,w,p] for i in range(args.I)) == self.vk[n,k,m,w,p] + quicksum(self.fk[n,k,m,w,j,p,g] for j in range(args.J) for g in range(args.G)))
                             else:
                                 self.model.addConstr(self.vk[n,k,m-1,w,p]  == self.vk[n,k,m,w,p] + quicksum(self.fk[n,k,m,w,j,p,g] for j in range(args.J) for g in range(args.G)))
-
-
+                                
+                            
+                            
         
         # Satify Demand Flow
         for n in range(args.TN):
@@ -143,7 +143,50 @@ class baseline_class():
 
     def run(self,args):
 
-        self.model.update()
+        self.model.reset()
         self.model.optimize()
+        if self.model.status == GRB.OPTIMAL:
+            print("opt")
+        else:
+            print("infeasible or unbounded")
+
+        total_costs = []
+
+        for n in range(args.TN):
+            if(n == 0):
+                print(f"node {n}:")
+
+                # Component 2: Production cost
+                production_cost = quicksum(self.idata.O_p[p] * (self.x[n, w, p].x - self.idata.R_p[p] * self.z[n, w, p].x) for w in range(args.W) for p in range(args.P))
+                print(f"Production cost for node {n}: {production_cost}")
+                total_costs.append(production_cost)
+
+                # Component 3: Cost for K iterations
+                print("O_p_aa:",quicksum(
+                    quicksum(self.idata.O_p[p] * self.aak[n, k, w, p].x - self.idata.R_p[p] * self.idata.O_p[p] * self.bbk[n, k, w, p].x for w in range(args.W) for p in range(args.P))
+                    for k in range(args.K)
+                ))
+                print("O_p:",quicksum(
+                    quicksum(self.idata.O_p[p] * self.ak[n, k, m, i, w, p].x for i in range(args.I) for w in range(args.W) for p in range(args.P) for m in range(args.M + 1))
+                    for k in range(args.K)
+                ))
+
+                for m in range(args.M + 1):
+                    print("month",m,sum( self.ak[n, 0, m, i, w, p].x for i in range(args.I) for w in range(args.W) for p in range(args.P)))
+
+                for m in range(args.M + 1):
+                    print("month inventory",m ,sum( self.vk[n,0,m,w,p].x for w in range(args.W) for p in range(args.P)))
+
+                for m in range(args.M + 1):
+                    print("Demand",m ,sum( self.tree[n].demand[0][m][j][g] for j in range(args.J) for g in range(args.G)))
+
+                for m in range(args.M + 1):
+                    print("Flow",m ,sum( self.fk[n,0,m,w,j,p,g].x for j in range(args.J) for w in range(args.W) for p in range(args.P) for g in range(args.G)))
+
+                print("CU_p:",quicksum(
+                    quicksum(self.idata.CU_g[g] * self.sk[n, k, m, j, g].x for j in range(args.J) for g in range(args.G) for m in range(args.M + 1))
+                    for k in range(args.K))
+                )
+
 
 
