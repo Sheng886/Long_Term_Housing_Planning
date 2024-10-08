@@ -1021,9 +1021,9 @@ class solve_SDDP:
                     elif(self.args.Strategic_node_sovling == 1):
                         u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_root.forward_run()
 
-                    solution_u[0][self.args.initial_state] = sum(u[w].x for w in range(self.args.W))
-                    solution_v[0][self.args.initial_state] = sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
-                    solution_obj[0][self.args.initial_state] = obj_ex
+                    solution_u[0][self.args.initial_state] += sum(u[w].x for w in range(self.args.W))/simulate_iter
+                    solution_v[0][self.args.initial_state] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))/simulate_iter
+                    solution_obj[0][self.args.initial_state] += obj_ex/simulate_iter
 
                     
                     for stage in range(self.args.T-1):
@@ -1032,9 +1032,9 @@ class solve_SDDP:
                         elif(self.args.Strategic_node_sovling == 1):
                             u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage[stage][sample_path[stage]].forward_run(u,v)
                         
-                        solution_u[stage+1][sample_path[stage]] = sum(u[w].x for w in range(self.args.W))
-                        solution_v[stage+1][sample_path[stage]] = sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
-                        solution_obj[stage+1][sample_path[stage]] = obj_ex
+                        solution_u[stage+1][sample_path[stage]] += sum(u[w].x for w in range(self.args.W))/simulate_iter
+                        solution_v[stage+1][sample_path[stage]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))/simulate_iter
+                        solution_obj[stage+1][sample_path[stage]] += obj_ex/simulate_iter
 
                     
                     if(self.args.Strategic_node_sovling == 0):
@@ -1042,9 +1042,9 @@ class solve_SDDP:
                     elif(self.args.Strategic_node_sovling == 1):
                         u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
                         
-                        solution_u[self.args.T][sample_path[self.args.T-1]] = sum(u[w].x for w in range(self.args.W))
-                        solution_v[self.args.T][sample_path[self.args.T-1]] = sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
-                        solution_obj[self.args.T][sample_path[self.args.T-1]] = obj_ex
+                        solution_u[self.args.T][sample_path[self.args.T-1]] += sum(u[w].x for w in range(self.args.W))/simulate_iter
+                        solution_v[self.args.T][sample_path[self.args.T-1]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))/simulate_iter
+                        solution_obj[self.args.T][sample_path[self.args.T-1]] += obj_ex/simulate_iter
 
 
                 solution = []
