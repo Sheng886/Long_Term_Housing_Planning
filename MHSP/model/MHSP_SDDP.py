@@ -1045,6 +1045,7 @@ class solve_SDDP:
                         solution_u[self.args.T][sample_path[self.args.T-1]] += sum(u[w].x for w in range(self.args.W))/simulate_iter
                         solution_v[self.args.T][sample_path[self.args.T-1]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))/simulate_iter
                         solution_obj[self.args.T][sample_path[self.args.T-1]] += obj_ex/simulate_iter
+                        sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))/simulate_iter
 
 
                 solution = []
