@@ -51,7 +51,7 @@ class subproblem:
         # Production Leadtime (assume 1 month lead time)
         for m in range(1,args.M+1):
             for i in range(args.I):
-                self.sub.addConstr(self.bk[m-1,i] + quicksum(self.ak[m,i,w,p] for p in range(args.P) for w in range(args.W)) ==  self.bk[m,i] + quicksum(self.ak[m-self.idata.P_p[p],i,w,p] for p in range(args.P) for w in range(args.W) if m-self.idata.P_p[p] > 0))
+                self.sub.addConstr(self.bk[m-1,i] + quicksum(self.ak[m,i,w,p] for p in range(args.P) for w in range(args.W) if m+self.idata.P_p[p] <= args.M) ==  self.bk[m,i] + quicksum(self.ak[m-self.idata.P_p[p],i,w,p] for p in range(args.P) for w in range(args.W) if m-self.idata.P_p[p] >= 0))
 
         # Production Capacity E_i
         # Dual
@@ -74,7 +74,7 @@ class subproblem:
         for m in range(1,args.M+1):
             for w in range(args.W):
                 for p in range(args.P):
-                    if(m-self.idata.P_p[p] > 0):
+                    if(m-self.idata.P_p[p] >= 0):
                         self.sub.addConstr(self.vk[m-1,w,p] + quicksum(self.ak[m-self.idata.P_p[p],i,w,p] for i in range(args.I)) == self.vk[m,w,p] + quicksum(self.fk[m,w,j,p,g] for j in range(args.J) for g in range(args.G)))
                     else:
                         self.sub.addConstr(self.vk[m-1,w,p]  == self.vk[m,w,p] + quicksum(self.fk[m,w,j,p,g] for j in range(args.J) for g in range(args.G)))

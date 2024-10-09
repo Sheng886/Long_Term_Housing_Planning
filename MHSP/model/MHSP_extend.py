@@ -152,41 +152,11 @@ class baseline_class():
 
         total_costs = []
 
+
         for n in range(args.TN):
-            if(n == 0):
-                print(f"node {n}:")
+            print(f"node {n}:")
 
-                # Component 2: Production cost
-                production_cost = quicksum(self.idata.O_p[p] * (self.x[n, w, p].x - self.idata.R_p[p] * self.z[n, w, p].x) for w in range(args.W) for p in range(args.P))
-                print(f"Production cost for node {n}: {production_cost}")
-                total_costs.append(production_cost)
-
-                # Component 3: Cost for K iterations
-                print("O_p_aa:",quicksum(
-                    quicksum(self.idata.O_p[p] * self.aak[n, k, w, p].x - self.idata.R_p[p] * self.idata.O_p[p] * self.bbk[n, k, w, p].x for w in range(args.W) for p in range(args.P))
-                    for k in range(args.K)
-                ))
-                print("O_p:",quicksum(
-                    quicksum(self.idata.O_p[p] * self.ak[n, k, m, i, w, p].x for i in range(args.I) for w in range(args.W) for p in range(args.P) for m in range(args.M + 1))
-                    for k in range(args.K)
-                ))
-
-                for m in range(args.M + 1):
-                    print("month",m,sum( self.ak[n, 0, m, i, w, p].x for i in range(args.I) for w in range(args.W) for p in range(args.P)))
-
-                for m in range(args.M + 1):
-                    print("month inventory",m ,sum( self.vk[n,0,m,w,p].x for w in range(args.W) for p in range(args.P)))
-
-                for m in range(args.M + 1):
-                    print("Demand",m ,sum( self.tree[n].demand[0][m][j][g] for j in range(args.J) for g in range(args.G)))
-
-                for m in range(args.M + 1):
-                    print("Flow",m ,sum( self.fk[n,0,m,w,j,p,g].x for j in range(args.J) for w in range(args.W) for p in range(args.P) for g in range(args.G)))
-
-                print("CU_p:",quicksum(
-                    quicksum(self.idata.CU_g[g] * self.sk[n, k, m, j, g].x for j in range(args.J) for g in range(args.G) for m in range(args.M + 1))
-                    for k in range(args.K))
-                )
-
+            print("u:", sum(self.u[n,w].x for w in range(self.args.W)))
+            print("v:", sum(self.v[n,w,p].x for w in range(self.args.W) for p in range(self.args.P)))
 
 

@@ -1006,6 +1006,7 @@ class solve_SDDP:
                 solution_u = np.zeros((self.args.T+1,self.args.N))
                 solution_v = np.zeros((self.args.T+1,self.args.N))
                 solution_obj = np.zeros((self.args.T+1,self.args.N))
+                path_count = np.zeros((self.args.T+1,self.args.N))
 
 
                 for iter in range(simulate_iter):
@@ -1014,6 +1015,9 @@ class solve_SDDP:
                     sample_path = self.sample_path(self.args)
                     # print(sample_path)
 
+                    u = 0
+                    v = 0
+                    obj_ex = 0
                     # ---------------------------------------------------- Forward ----------------------------------------------------
                     if(self.args.Strategic_node_sovling == 0):
                         u,v,obj_ex = self.stage_root.forward_run()
@@ -1021,37 +1025,42 @@ class solve_SDDP:
                     elif(self.args.Strategic_node_sovling == 1):
                         u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_root.forward_run()
 
-                    solution_u[0][self.args.initial_state] += sum(u[w].x for w in range(self.args.W))/simulate_iter
-                    solution_v[0][self.args.initial_state] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))/simulate_iter
-                    solution_obj[0][self.args.initial_state] += obj_ex/simulate_iter
+                    solution_u[0][self.args.initial_state] += sum(u[w].x for w in range(self.args.W))
+                    solution_v[0][self.args.initial_state] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+                    solution_obj[0][self.args.initial_state] += obj_ex
+                    path_count[0][self.args.initial_state] += 1
 
                     
                     for stage in range(self.args.T-1):
                         if(self.args.Strategic_node_sovling == 0):
-                            u,v,obj = self.stage[stage][sample_path[stage]].forward_run(u,v)
+                            u,v,obj_ex = self.stage[stage][sample_path[stage]].forward_run(u,v)
                         elif(self.args.Strategic_node_sovling == 1):
                             u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage[stage][sample_path[stage]].forward_run(u,v)
                         
-                        solution_u[stage+1][sample_path[stage]] += sum(u[w].x for w in range(self.args.W))/simulate_iter
-                        solution_v[stage+1][sample_path[stage]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))/simulate_iter
-                        solution_obj[stage+1][sample_path[stage]] += obj_ex/simulate_iter
-
+                        solution_u[stage+1][sample_path[stage]] += sum(u[w].x for w in range(self.args.W))
+                        solution_v[stage+1][sample_path[stage]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+                        solution_obj[stage+1][sample_path[stage]] += obj_ex
+                        path_count[stage+1][sample_path[stage]] += 1
                     
                     if(self.args.Strategic_node_sovling == 0):
                         u,v,obj_ex = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
                     elif(self.args.Strategic_node_sovling == 1):
                         u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
                         
-                        solution_u[self.args.T][sample_path[self.args.T-1]] += sum(u[w].x for w in range(self.args.W))/simulate_iter
-                        solution_v[self.args.T][sample_path[self.args.T-1]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))/simulate_iter
-                        solution_obj[self.args.T][sample_path[self.args.T-1]] += obj_ex/simulate_iter
-                        sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))/simulate_iter
-
-
+                    solution_u[self.args.T][sample_path[self.args.T-1]] += sum(u[w].x for w in range(self.args.W))
+                    solution_v[self.args.T][sample_path[self.args.T-1]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+                    solution_obj[self.args.T][sample_path[self.args.T-1]] += obj_ex
+                    path_count[self.args.T][sample_path[stage]] += 1
+                
                 solution = []
+
+                # pdb.set_trace()
                 for t in range(self.args.T+1):
                     for n in range(self.args.N):
-                        solution.append([t,n,solution_u[t][n],solution_v[t][n],solution_obj[t][n]])
+                        if(path_count[t][n] == 0):
+                            solution.append([t,n,solution_u[t][n],solution_v[t][n],solution_obj[t][n]])
+                        else:
+                            solution.append([t,n,solution_u[t][n]/path_count[t][n],solution_v[t][n]/path_count[t][n],solution_obj[t][n]/path_count[t][n]])
                 
                 
                 df = pd.DataFrame(solution, columns=[ 'stage','state','Staging Area Capacity','Inventory Level','obj'])
