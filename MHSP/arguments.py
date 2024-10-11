@@ -59,8 +59,8 @@ class Arguments:
         # Demand Generator Path
         self._parser.add_argument('--Atlantic_month_dis', type=str, default='generator_data/Atlantic_month_dis.xlsx', help='Atlantic_month_dis file path')
         self._parser.add_argument('--Atlantic_SS_dis', type=str, default='generator_data/Atlantic_SS_dis.xlsx', help='Atlantic_SS_dis file path')
-        self._parser.add_argument('--Data_Atlantic', type=str, default='generator_data/Data_Atlantic.csv', help='Data_Atlantic file path')
-        self._parser.add_argument('--Data_Gulf', type=str, default='generator_data/Data_Gulf.csv', help='Data_Gulf file path')
+        self._parser.add_argument('--Data_Atlantic', type=str, default='generator_data/Data_Atlantic_all_state.csv', help='Data_Atlantic file path')
+        self._parser.add_argument('--Data_Gulf', type=str, default='generator_data/Data_Gulf_all_state.csv', help='Data_Gulf file path')
         self._parser.add_argument('--Frequency', type=str, default='generator_data/Frequency.xlsx', help='Frequency file path')
         self._parser.add_argument('--Gulf_month_dis', type=str, default='generator_data/Gulf_month_dis.xlsx', help='Gulf_month_dis file path')
         self._parser.add_argument('--Gulf_SS_dis', type=str, default='generator_data/Gulf_SS_dis.xlsx', help='Gulf_SS_dis file path')
@@ -73,6 +73,13 @@ class Arguments:
         self._parser.add_argument('--P_p_factor', type=float, default=1, help='Production Factor')
         self._parser.add_argument('--C_u_factor', type=float, default=1, help='Unmet Factor')
         self._parser.add_argument('--O_p_factor', type=float, default=1, help='Acquire Factor')
+        self._parser.add_argument('--H_p_factor', type=float, default=1, help='Holding Factor')
+
+
+        # Evaulation switch
+        self._parser.add_argument('--evaluate_switch', type=bool, default=False, help='Acquire Factor')
+        # Policy
+        self._parser.add_argument('--Policy', type=str, default='', help='Policy')
 
 
 

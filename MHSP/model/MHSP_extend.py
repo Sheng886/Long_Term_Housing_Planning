@@ -38,7 +38,7 @@ class baseline_class():
 
         # Objective
         self.model.setObjective(quicksum(self.tree[n].prob_to_node*(quicksum(self.idata.E_w[w]*self.y[n,w] for w in range(args.W)) 
-                                                                  + quicksum(self.idata.O_p[p]*(self.x[n,w,p] - self.idata.R_p[p]*self.z[n,w,p]) for w in range(args.W) for p in range(args.P))
+                                                                  + quicksum(self.idata.O_p[p]*(self.x[n,w,p] - self.idata.R_p[p]*self.z[n,w,p]) + self.idata.H_p[p]*self.v[n,w,p] for w in range(args.W) for p in range(args.P))
                                                                   + (1/(args.K))*quicksum((quicksum(self.idata.O_p[p]*self.aak[n,k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[n,k,w,p] for w in range(args.W) for p in range(args.P)) 
                                                                                + quicksum(quicksum(self.idata.O_p[p]*self.ak[n,k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                                                                         + quicksum(self.idata.CU_g[g]*self.sk[n,k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1))) for k in range(args.K))) 

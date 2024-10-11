@@ -216,13 +216,13 @@ class StageProblem:
         # Objective
         if(last_stage == False):
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
-                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) for w in range(args.W) for p in range(args.P))
+                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
                                   + self.phi
                                   + quicksum(self.idata.MC_tran_matrix[state][n]*self.theta[n] for n in range(args.N)) 
                                 , GRB.MINIMIZE);
         else:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
-                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) for w in range(args.W) for p in range(args.P))
+                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p]for w in range(args.W) for p in range(args.P))
                                   + self.phi
                                 , GRB.MINIMIZE);
 

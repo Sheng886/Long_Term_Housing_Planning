@@ -77,6 +77,7 @@ class input_data_class:
         self.P_p = np.zeros((args.P))
         self.O_p = np.zeros((args.P))
         self.R_p = np.zeros((args.P))
+        self.H_p = np.zeros((args.P))
 
         
 
@@ -89,9 +90,10 @@ class input_data_class:
             # self.O_p[p] = args.O_p_factor*df_House_info.iloc[1][p+1]
             self.O_p[p] = args.O_p_factor*1000
             self.R_p[p] = df_House_info.iloc[2][p+1]
+            self.H_p[p] =  self.O_p[p]*args.H_p_factor*df_House_info.iloc[2][p+1]
 
-            print("P:", self.P_p[p])
-            print("R:", self.R_p[p])
+            print("R:", self.O_p[p])
+            print("R:", self.H_p[p])
 
         # ### ------------------Supply ------------------ ###
         self.B_i = np.zeros((args.I))

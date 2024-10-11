@@ -185,7 +185,18 @@ class subproblem:
             print("obj:",self.sub.ObjVal)
             pdb.set_trace()
 
-        return pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,self.sub.ObjVal
+        
+        replenmship_cost = 0
+        Shortage_cost = 0
+        acquire_cost = 0
+
+        if(self.args.evaluate_switch == True):
+            replenmship_cost = sum(self.idata.O_p[p]*self.aak[w,p].x - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+            Shortage_cost =  sum(sum(self.idata.CU_g[g]*self.sk[m,j,g].x for j in range(self.args.J) for g in range(self.args.G)) for m in range(self.args.M+1))
+            acquire_cost =  sum( sum(self.idata.O_p[p]*self.ak[m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for p in range(self.args.P)) for m in range(self.args.M+1))
+
+
+        return pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,self.sub.ObjVal,replenmship_cost,Shortage_cost,acquire_cost
 
 class StageProblem_Decomposition:
     """A data structure that keeps stage-wise problems"""
@@ -230,13 +241,13 @@ class StageProblem_Decomposition:
         # Objective
         if(last_stage == False):
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
-                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) for w in range(args.W) for p in range(args.P))
+                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
                                   + self.phi
                                   + quicksum(self.idata.MC_tran_matrix[state][n]*self.theta[n] for n in range(args.N)) 
                                 , GRB.MINIMIZE);
         else:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
-                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) for w in range(args.W) for p in range(args.P))
+                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
                                   + self.phi
                                 , GRB.MINIMIZE);
 
@@ -254,6 +265,19 @@ class StageProblem_Decomposition:
 
             # Staging Area Capacity >= Invenotry Level
             self.model.addConstr(quicksum(self.v[w,p] for p in range(args.P)) <= self.u[w])
+
+
+        if(args.Policy == "WS"):
+            for w in range(args.W):
+                self.model.addConstr(self.u[w] == 0)
+        elif(args.Policy == "avg"):
+            if stage0 != True:
+                for w in range(args.W):
+                    self.model.addConstr(self.y[w] == 0)
+                    for p in range(args.P):
+                        self.model.addConstr(self.x[w,p] == 0 )
+                        self.model.addConstr(self.z[w,p] == 0)
+
 
 
         # Invenory Level
@@ -332,9 +356,9 @@ class StageProblem_Decomposition:
 
             for k in range(self.args.K):
                 if(self.stage0 == False):
-                    pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k] = self.sub.run(self.u,self.v,self.idata.demand[self.stage][self.state][k])
+                    pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k],temp1,temp2,temp3 = self.sub.run(self.u,self.v,self.idata.demand[self.stage][self.state][k])
                 else:
-                    pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k] = self.sub.run(self.u,self.v,self.idata.demand_root[k])
+                    pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k],temp1,temp2,temp3 = self.sub.run(self.u,self.v,self.idata.demand_root[k])
                 sub_opt_total = sub_opt_total + sub_opt
 
             sub_opt_total = (1/self.args.K)*sum(sub_opt[k] for k in range(self.args.K))
@@ -399,11 +423,22 @@ class StageProblem_Decomposition:
                 # print("stage:",self.stage,"state:",self.state,"add Benders cut")
 
 
+
+
+        staging_area_expand_cost_temp = 0
+        inventory_expand_cost_temp = 0
+        holding_cost_temp = 0
+
+
+        if(self.args.evaluate_switch == True):
+
+            staging_area_expand_cost_temp = sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W))                                   
+            inventory_expand_cost_temp =  sum(self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
+            holding_cost_temp = sum(self.idata.H_p[p]*self.v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+
            
 
-            
-
-        return self.u,self.v,LB, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i
+        return self.u,self.v,LB, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i, staging_area_expand_cost_temp, inventory_expand_cost_temp,holding_cost_temp
 
     def backward_run(self,iter):
 
@@ -561,7 +596,7 @@ class StageProblem_extended:
         # Objective
         if(last_stage == False):
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
-                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) for w in range(args.W) for p in range(args.P))
+                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
                                   + (1/args.K)*quicksum(quicksum(self.idata.O_p[p]*self.aak[k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
                                                       + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                                                 + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)) for k in range(args.K))
@@ -569,7 +604,7 @@ class StageProblem_extended:
                                 , GRB.MINIMIZE);
         else:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
-                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) for w in range(args.W) for p in range(args.P))
+                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
                                   + (1/args.K)*quicksum(quicksum(self.idata.O_p[p]*self.aak[k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
                                                       + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                                                 + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)) for k in range(args.K))
@@ -589,6 +624,18 @@ class StageProblem_extended:
 
             # Staging Area Capacity >= Invenotry Level
             self.model.addConstr(quicksum(self.v[w,p] for p in range(args.P)) <= self.u[w])
+
+
+        if(args.Policy == "WS"):
+            for w in range(args.W):
+                self.model.addConstr(self.u[w] == 0)
+        elif(args.Policy == "avg"):
+            if stage0 != True:
+                for w in range(args.W):
+                    for p in range(args.P):
+                        self.model.addConstr(self.y[w] == 0)
+                        self.model.addConstr(self.x[w,p] == 0 )
+                        self.model.addConstr(self.z[w,p] == 0)
 
 
         # Invenory Level
@@ -726,7 +773,25 @@ class StageProblem_extended:
 
 
 
-        return self.u,self.v,self.model.ObjVal
+        staging_area_expand_cost = 0
+        inventory_expand_cost = 0
+        replenmship_cost = 0
+        Shortage_cost = 0
+        acquire_cost = 0
+        holding_cost_temp = 0
+
+        if(self.args.evaluate_switch == True):
+
+            
+            staging_area_expand_cost = sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W))                                   
+            inventory_expand_cost =  sum(self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
+            replenmship_cost = (1/self.args.K)*sum(sum(self.idata.O_p[p]*self.aak[k,w,p].x - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p].x for w in range(self.args.W) for p in range(self.args.P)) for k in range(self.args.K))
+            Shortage_cost =  (1/self.args.K)*sum(sum(sum(self.idata.CU_g[g]*self.sk[k,m,j,g].x for j in range(self.args.J) for g in range(self.args.G)) for m in range(self.args.M+1)) for k in range(self.args.K))
+            acquire_cost =  (1/self.args.K)*sum(sum( sum(self.idata.O_p[p]*self.ak[k,m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for p in range(self.args.P)) for m in range(self.args.M+1)) for k in range(self.args.K))
+            holding_cost_temp = sum(self.idata.H_p[p]*self.v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+
+
+        return self.u,self.v,self.model.ObjVal,staging_area_expand_cost,inventory_expand_cost,replenmship_cost,Shortage_cost,acquire_cost,holding_cost_temp
 
     def backward_run(self):
 
@@ -926,11 +991,15 @@ class solve_SDDP:
             sample_path = self.sample_path(self.args)
             # print(sample_path)
 
+            u = 0
+            v = 0
+            obj_ex = 0
+
             # ---------------------------------------------------- Forward ----------------------------------------------------
             if(self.args.Strategic_node_sovling == 0):
-                u,v,obj_ex = self.stage_root.forward_run()
+                u,v,obj_ex,temp1,temp2,temp3,temp4,temp5,temp6 = self.stage_root.forward_run()
             elif(self.args.Strategic_node_sovling == 1):
-                u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_root.forward_run()
+                u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,temp1,temp2,temp3 = self.stage_root.forward_run()
 
                 # Benders Cut Sharing
                 self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,root=True)
@@ -938,17 +1007,17 @@ class solve_SDDP:
             
             for stage in range(self.args.T-1):
                 if(self.args.Strategic_node_sovling == 0):
-                    u,v,obj = self.stage[stage][sample_path[stage]].forward_run(u,v)
+                    u,v,obj_ex,temp1,temp2,temp3,temp4,temp5,temp6 = self.stage[stage][sample_path[stage]].forward_run(u,v)
                 elif(self.args.Strategic_node_sovling == 1):
-                    u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage[stage][sample_path[stage]].forward_run(u,v)
+                    u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,temp1,temp2,temp3 = self.stage[stage][sample_path[stage]].forward_run(u,v)
                     
                     # Benders Cut Sharing
                     self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,state=sample_path[stage],stage=stage)
             
             if(self.args.Strategic_node_sovling == 0):
-                u,v,obj = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
+                u,v,obj_ex,temp1,temp2,temp3,temp4,temp5,temp6 = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
             elif(self.args.Strategic_node_sovling == 1):
-                u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
+                u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,temp1,temp2,temp3 = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
                 
                 # Benders Cut Sharing
                 self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,leaf=True,state=sample_path[self.args.T-1])
@@ -1000,12 +1069,21 @@ class solve_SDDP:
                 train_time = Elapsed
                 print("total time:", Elapsed)
 
+                self.args.evaluate_switch = True
+
                 # ---------------------------------------------------- Polciy Simulation ----------------------------------------------------
                 
                 simulate_iter = 1000
                 solution_u = np.zeros((self.args.T+1,self.args.N))
                 solution_v = np.zeros((self.args.T+1,self.args.N))
                 solution_obj = np.zeros((self.args.T+1,self.args.N))
+                staging_area_expand_cost = np.zeros((self.args.T+1,self.args.N))
+                inventory_expand_cost = np.zeros((self.args.T+1,self.args.N))
+                replenmship_cost = np.zeros((self.args.T+1,self.args.N))
+                acquire_cost = np.zeros((self.args.T+1,self.args.N))
+                Shortage_cost = np.zeros((self.args.T+1,self.args.N))
+                holding_cost = np.zeros((self.args.T+1,self.args.N))
+
                 path_count = np.zeros((self.args.T+1,self.args.N))
 
 
@@ -1018,39 +1096,70 @@ class solve_SDDP:
                     u = 0
                     v = 0
                     obj_ex = 0
+                    staging_area_expand_cost_temp = 0
+                    inventory_expand_cost_temp = 0
+                    replenmship_cost_temp = 0
+                    Shortage_cost_temp = 0
+                    acquire_cost_temp = 0
+                    holdings_cost_temp = 0
                     # ---------------------------------------------------- Forward ----------------------------------------------------
                     if(self.args.Strategic_node_sovling == 0):
-                        u,v,obj_ex = self.stage_root.forward_run()
+                        u,v,obj_ex,staging_area_expand_cost_temp,inventory_expand_cost_temp,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp,holdings_cost_temp = self.stage_root.forward_run()
 
                     elif(self.args.Strategic_node_sovling == 1):
-                        u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_root.forward_run()
+                        u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,staging_area_expand_cost_temp,inventory_expand_cost_temp,holdings_cost_temp = self.stage_root.forward_run()
+                        for k in range(self.args.K):
+                            pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage_root.sub.run(u,v,self.idata.demand_root[k])
 
                     solution_u[0][self.args.initial_state] += sum(u[w].x for w in range(self.args.W))
                     solution_v[0][self.args.initial_state] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
                     solution_obj[0][self.args.initial_state] += obj_ex
+                    staging_area_expand_cost[0][self.args.initial_state] += staging_area_expand_cost_temp
+                    inventory_expand_cost[0][self.args.initial_state] += inventory_expand_cost_temp
+                    replenmship_cost[0][self.args.initial_state] += replenmship_cost_temp
+                    Shortage_cost[0][self.args.initial_state] += Shortage_cost_temp
+                    acquire_cost[0][self.args.initial_state] += acquire_cost_temp
+                    holding_cost[0][self.args.initial_state] += holdings_cost_temp
                     path_count[0][self.args.initial_state] += 1
 
                     
                     for stage in range(self.args.T-1):
                         if(self.args.Strategic_node_sovling == 0):
-                            u,v,obj_ex = self.stage[stage][sample_path[stage]].forward_run(u,v)
+                            u,v,obj_ex,staging_area_expand_cost_temp,inventory_expand_cost_temp,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp,holdings_cost_temp = self.stage[stage][sample_path[stage]].forward_run(u,v)
                         elif(self.args.Strategic_node_sovling == 1):
-                            u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage[stage][sample_path[stage]].forward_run(u,v)
+                            u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,staging_area_expand_cost_temp,inventory_expand_cost_temp,holdings_cost_temp = self.stage[stage][sample_path[stage]].forward_run(u,v)
+                            for k in range(self.args.K):
+                                pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage[stage][sample_path[stage]].sub.run(u,v,self.idata.demand[stage][sample_path[stage]][k])
                         
                         solution_u[stage+1][sample_path[stage]] += sum(u[w].x for w in range(self.args.W))
                         solution_v[stage+1][sample_path[stage]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
                         solution_obj[stage+1][sample_path[stage]] += obj_ex
+                        staging_area_expand_cost[stage+1][sample_path[stage]] += staging_area_expand_cost_temp
+                        inventory_expand_cost[stage+1][sample_path[stage]] += inventory_expand_cost_temp
+                        replenmship_cost[stage+1][sample_path[stage]] += replenmship_cost_temp
+                        Shortage_cost[stage+1][sample_path[stage]] += Shortage_cost_temp
+                        acquire_cost[stage+1][sample_path[stage]] += acquire_cost_temp
+                        holding_cost[stage+1][sample_path[stage]] += holdings_cost_temp
                         path_count[stage+1][sample_path[stage]] += 1
                     
                     if(self.args.Strategic_node_sovling == 0):
-                        u,v,obj_ex = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
+                        u,v,obj_ex,staging_area_expand_cost_temp,inventory_expand_cost_temp,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp,holdings_cost_temp = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
                     elif(self.args.Strategic_node_sovling == 1):
-                        u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
+                        u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,staging_area_expand_cost_temp,inventory_expand_cost_temp,holdings_cost_temp = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
+                        for k in range(self.args.K):
+                                pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage_leaf[sample_path[self.args.T-1]].sub.run(u,v,self.idata.demand[stage][sample_path[stage]][k])
                         
                     solution_u[self.args.T][sample_path[self.args.T-1]] += sum(u[w].x for w in range(self.args.W))
                     solution_v[self.args.T][sample_path[self.args.T-1]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
                     solution_obj[self.args.T][sample_path[self.args.T-1]] += obj_ex
-                    path_count[self.args.T][sample_path[stage]] += 1
+                    staging_area_expand_cost[self.args.T][sample_path[self.args.T-1]] += staging_area_expand_cost_temp
+                    inventory_expand_cost[self.args.T][sample_path[self.args.T-1]] += inventory_expand_cost_temp
+                    replenmship_cost[self.args.T][sample_path[self.args.T-1]] += replenmship_cost_temp
+                    Shortage_cost[self.args.T][sample_path[self.args.T-1]] += Shortage_cost_temp
+                    acquire_cost[self.args.T][sample_path[self.args.T-1]] += acquire_cost_temp
+                    holding_cost[self.args.T][sample_path[self.args.T-1]] += holdings_cost_temp
+                    path_count[self.args.T][sample_path[self.args.T-1]] += 1
+
                 
                 solution = []
 
@@ -1058,13 +1167,13 @@ class solve_SDDP:
                 for t in range(self.args.T+1):
                     for n in range(self.args.N):
                         if(path_count[t][n] == 0):
-                            solution.append([t,n,solution_u[t][n],solution_v[t][n],solution_obj[t][n]])
+                            solution.append([t,n,solution_u[t][n],solution_v[t][n],solution_obj[t][n],staging_area_expand_cost[t][n],inventory_expand_cost[t][n],replenmship_cost[t][n],Shortage_cost[t][n],acquire_cost[t][n],holding_cost[t][n]])
                         else:
-                            solution.append([t,n,solution_u[t][n]/path_count[t][n],solution_v[t][n]/path_count[t][n],solution_obj[t][n]/path_count[t][n]])
+                            solution.append([t,n,solution_u[t][n]/path_count[t][n],solution_v[t][n]/path_count[t][n],solution_obj[t][n]/path_count[t][n],staging_area_expand_cost[t][n]/path_count[t][n],inventory_expand_cost[t][n]/path_count[t][n],replenmship_cost[t][n]/path_count[t][n],Shortage_cost[t][n]/path_count[t][n],acquire_cost[t][n]/path_count[t][n],holding_cost[t][n]/path_count[t][n]])
                 
                 
-                df = pd.DataFrame(solution, columns=[ 'stage','state','Staging Area Capacity','Inventory Level','obj'])
-                filename = "result_Stage_" + str(self.args.T) + "_States_" + str(self.args.N) + "_Study_" + str(self.args.J) + "_month_" + str(self.args.M)  + "_K_" + str(self.args.K)  + "_Pp_" + str(self.args.P_p_factor) + "_Cu_" + str(self.args.C_u_factor) + "_Op_" +  str(self.args.O_p_factor)
+                df = pd.DataFrame(solution, columns=[ 'stage','state','Staging Area Capacity','Inventory Level','obj','staging_area_expand_cost','inventory_expand_cost','replenmship_cost','Shortage_cost','acquire_cost','holding_cost'])
+                filename = "result_Stage_" + str(self.args.T) + "_States_" + str(self.args.N) + "_Study_" + str(self.args.J) + "_month_" + str(self.args.M)  + "_K_" + str(self.args.K)  + "_Pp_" + str(self.args.P_p_factor) + "_Cu_" + str(self.args.C_u_factor) + "_Op_" +  str(self.args.O_p_factor) + "_Hp_" +  str(self.args.H_p_factor)  + "_policy_" +  str(self.args.Policy)
 
                 df.to_csv(f'{filename}.csv', index=False) 
                 break

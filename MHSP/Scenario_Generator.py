@@ -11,6 +11,7 @@ import statsmodels.api as sm
 import math
 import csv
 from arguments import Arguments
+from scipy import stats
 import pdb
 
 ###### Distacne Matrix ######
@@ -262,6 +263,8 @@ def main_generator(args):
                 A_month_freq = distribute_hurricane_month(freq_sample_path_A, Atlantic_month_dis)
                 G_month_freq = distribute_hurricane_month(freq_sample_path_G, Gulf_month_dis)
 
+                # print(freq_sample_path_A,freq_sample_path_G)
+
 
                 for m in range(args.M+1):
 
@@ -358,10 +361,25 @@ def main_generator(args):
                     study_region_demand_np = study_region_demand[['type1','type2']].to_numpy()
 
                     if(t == args.T):
-                         demand_root[k][m] = study_region_demand_np
+                        demand_root[k][m] = study_region_demand_np
                     else:
                         demand[t][n_index][k][m] = study_region_demand_np
-        print(f"Stage {t} is generated")
+
+    states_len = len(states)
+    for n1 in range(states_len):
+        for n2 in range(n1,states_len):
+            demand1 = []
+            demand2 = []
+            for k in range(args.K):
+                demand1.append(sum(demand[0][n1][k][m][j][g] for j in range(args.J) for m in range(args.M+1) for g in range(args.G)))
+                demand2.append(sum(demand[0][n2][k][m][j][g] for j in range(args.J) for m in range(args.M+1) for g in range(args.G)))
+            # print(n1,n2, demand1, demand2)
+            statistic, p_value = stats.ks_2samp(demand1, demand2)
+            print(n1,n2)
+            print(f"KS Statistic: {statistic}")
+            print(f"P-value: {p_value}")
+
+    demand1 = demand[t][n_index]
 
     filename = "demand_data/Demand_Stage_" + str(args.T) + "_States_" + str(args.N) + "_Study_" + str(args.J) + "_month_" + str(args.M) + "_K_" + str(args.K)
     filename_root = "demand_data/Root_Demand_Stage_" + str(args.T) + "_States_" + str(args.N) + "_Study_" + str(args.J) + "_month_" + str(args.M) + "_K_" + str(args.K)
