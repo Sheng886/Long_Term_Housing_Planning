@@ -1,0 +1,146 @@
+---
+title: "Regression"
+output: html_document
+date: "2022-09-22"
+---
+
+## Package
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(zoo)
+library(dplyr)
+library(ggplot2) 
+library(maps)
+library(sp)
+library(maptools)
+library(geosphere)
+library(MASS)
+library(viridis)
+library(rstan)
+library(readr)
+```
+
+```{r}
+# Set a seed for reproducibility
+set.seed(123)
+
+# Load data from a CSV file
+data <- read_csv("data_counts/data_all_counts.csv")
+
+# Input
+N <- nrow(data)
+NAO <- data$NAO
+AMO <- data$AMO
+SOI <- data$SOI
+
+# Response
+observed_data <- data$LANDFALL_COUNTS
+
+# Define the model with improved priors and adjusted prior scales
+model_code <- "
+  data {
+    int<lower=0> N;
+    vector[N] NAO;
+    vector[N] AMO;
+    vector[N] SOI;
+    int<lower=0> observed_data[N];
+  }
+  parameters {
+    real beta0;
+    real beta1;
+    real beta2;
+    real beta3;
+  }
+  model {
+    vector[N] lambda;
+    // Priors
+    beta0 ~ normal(0, 10);
+    beta1 ~ normal(0, 10);
+    beta2 ~ normal(0, 10);
+    beta3 ~ normal(0, 10);
+    // Linear combination for lambda
+    lambda = exp(beta0 + beta1 * NAO + beta2 * SOI + beta3 * AMO);
+    
+    // Likelihood
+    observed_data ~ poisson(lambda);
+  }
+"
+
+# Compile the model
+stan_model <- stan_model(model_code = model_code, save_dso = TRUE)
+
+# Prepare data list for Stan
+stan_data <- list(
+  N = N,
+  NAO = NAO,
+  AMO = AMO,
+  SOI = SOI,
+  observed_data = observed_data
+)
+
+# Run MCMC sampling
+fit <- sampling(stan_model, data = stan_data, iter = 2000, warmup = 1000, chains = 4, seed = 1234)
+
+# Print summary of the results
+print(fit)
+
+traceplot(fit)
+traceplot(fit, pars = 'lp__')
+```
+```{r}
+# Response
+observed_data <- data$HURRICANE
+
+# Define the model with improved priors and adjusted prior scales
+model_code <- "
+  data {
+    int<lower=0> N;
+    vector[N] NAO;
+    vector[N] AMO;
+    vector[N] SOI;
+    int<lower=0> observed_data[N];
+  }
+  parameters {
+    real beta0;
+    real beta1;
+    real beta2;
+    real beta3;
+  }
+  model {
+    vector[N] lambda;
+    // Priors
+    beta0 ~ normal(0, 10);
+    beta1 ~ normal(0, 10);
+    beta2 ~ normal(0, 10);
+    beta3 ~ normal(0, 10);
+    // Linear combination for lambda
+    lambda = exp(beta0 + beta1 * NAO + beta2 * SOI + beta3 * AMO);
+    
+    // Likelihood
+    observed_data ~ poisson(lambda);
+  }
+"
+
+# Compile the model
+stan_model <- stan_model(model_code = model_code, save_dso = TRUE)
+
+# Prepare data list for Stan
+stan_data <- list(
+  N = N,
+  NAO = NAO,
+  AMO = AMO,
+  SOI = SOI,
+  observed_data = observed_data
+)
+
+# Run MCMC sampling
+fit <- sampling(stan_model, data = stan_data, iter = 2000, warmup = 1000, chains = 4, seed = 1234)
+
+# Print summary of the results
+print(fit)
+
+traceplot(fit)
+traceplot(fit, pars = 'lp__')
+```
+

@@ -35,6 +35,8 @@ Hurricane_$Longitude = as.numeric(substr(Hurricane_$Longitude, 1, 4))
 Hurricane_$Latitude = Hurricane_$Latitude
 Hurricane_$Longitude = Hurricane_$Longitude*-1
 
+write.csv(Hurricane_, file = "hurricane.csv", row.names = FALSE)
+
 Hurricane_data_Gulf = Hurricane_[Hurricane_$Longitude < -81.4,]
 Hurricane_data_Atlantic = Hurricane_[Hurricane_$Longitude >= -81.4 & Hurricane_$Longitude <= -70 & Hurricane_$Latitude <= 36,]
 
