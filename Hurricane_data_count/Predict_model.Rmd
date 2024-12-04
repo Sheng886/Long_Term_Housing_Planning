@@ -19,6 +19,12 @@ library(MASS)
 library(viridis)
 library(rstan)
 library(readr)
+library(bayesplot)
+library(tidyr)
+library(loo)
+library(forecast)
+library(rugarch)
+library(tseries)
 ```
 
 ```{r}
@@ -34,9 +40,55 @@ NAO <- data$NAO
 AMO <- data$AMO
 SOI <- data$SOI
 
+data_long <- pivot_longer(data, cols = c("NAO", "AMO", "SOI"), names_to = "Index", values_to = "Value")
+
+# 繪製折線圖
+ggplot(data_long, aes(x = Year, y = Value, color = Index)) +
+  geom_line(size = 1) +
+  geom_point() +
+  labs(title = "NAO, AMO, and SOI Trends Over Time",
+       x = "Year",
+       y = "Index Value",
+       color = "Climate Index") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
 # Response
 observed_data <- data$LANDFALL_COUNTS
 
+ggplot(data, aes(x = Year, y = HURRICANE)) +
+  geom_line(size = 1) +
+  geom_point() +
+  labs(
+       x = "Year",
+       y = "Frequency",) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+```{r}
+
+model1 <- glm(observed_data ~ NAO + AMO, data = data, family = poisson)
+model0 <- glm(observed_data ~ AMO + SOI, data = data, family = poisson)
+model2 <- glm(observed_data ~ NAO + AMO + SOI, data = data, family = poisson)
+model3 <- glm(observed_data ~ NAO , data = data, family = poisson)
+model4 <- glm(observed_data ~ AMO , data = data, family = poisson)
+
+print(model1)
+
+# 計算 AIC 和 BIC 值
+aic_values <- c(AIC(model0), AIC(model1), AIC(model2), AIC(model3), AIC(model4))
+bic_values <- c(BIC(model0),BIC(model1), BIC(model2), BIC(model3), BIC(model4))
+
+print(aic_values)
+print(bic_values)
+
+```
+
+```{r}
+
 # Define the model with improved priors and adjusted prior scales
 model_code <- "
   data {
@@ -83,64 +135,611 @@ stan_data <- list(
 fit <- sampling(stan_model, data = stan_data, iter = 2000, warmup = 1000, chains = 4, seed = 1234)
 
 # Print summary of the results
-print(fit)
+print(fit, digits = 2)
 
-traceplot(fit)
-traceplot(fit, pars = 'lp__')
+# trace plot
+traceplot(fit, pars = c('beta0', 'beta1', 'beta2', 'beta3', 'lp__'))
+
+# correlation between predictors -> if linear, high correlation
+mcmc_pairs(as.array(fit), pars = c('beta0', 'beta1', 'beta2', 'beta3'))
+mcmc_dens(as.array(fit), pars = c('beta0', 'beta1', 'beta2', 'beta3'))
+
+posterior_samples <- rstan::extract(fit)
+
+beta0 <- posterior_samples$beta0
+beta1 <- posterior_samples$beta1
+beta2 <- posterior_samples$beta2
+beta3 <- posterior_samples$beta3
+
+num_samples <- length(beta0)
+num_obs <- length(AMO)
+predicted_lambda <- matrix(NA, nrow = num_samples, ncol = num_obs)
+
+for (i in 1:num_samples) {
+  predicted_lambda[i, ] <- exp(beta0[i] + beta1[i] * NAO + beta2[i] * SOI  + beta3[i] * AMO)
+}
+
+predicted_lambda_mean <- colMeans(predicted_lambda)
+
+plot(observed_data, predicted_lambda_mean,
+     xlab = "Observed Landfall Counts",
+     ylab = "Predicted Landfall Counts",
+     main = "Comparison of Observed and Predicted Landfall Counts")
+abline(a = 0, b = 1, col = "red")
+
+mse <- mean((observed_data - predicted_lambda_mean)^2)
+print(paste("Mean Squared Error:", sqrt(mse)))
+
+ss_total <- sum((observed_data - mean(observed_data))^2)
+ss_residual <- sum((observed_data - predicted_lambda_mean)^2)
+r_squared <- 1 - (ss_residual / ss_total)
+print(paste("R-squared:", r_squared))
+
+residuals <- observed_data - predicted_lambda_mean
+
+plot(predicted_lambda_mean, residuals,
+     xlab = "Predicted Landfall Counts",
+     ylab = "Residuals",
+     main = "Residuals vs Fitted Values")
+abline(h = 0, col = "red")
+```
+
+```{r}
+# Define the model with improved priors and adjusted prior scales
+model_code <- "
+  data {
+    int<lower=0> N;
+    vector[N] NAO;
+    vector[N] AMO;
+    int<lower=0> observed_data[N];
+  }
+  parameters {
+    real beta0;
+    real beta1;
+    real beta3;
+  }
+  model {
+    vector[N] lambda;
+    // Priors
+    beta0 ~ normal(0, 10);
+    beta1 ~ normal(0, 10);
+    beta3 ~ normal(0, 10);
+    // Linear combination for lambda
+    lambda = exp(beta0 + beta1 * NAO + beta3 * AMO);
+    
+    // Likelihood
+    observed_data ~ poisson(lambda);
+  }
+"
+
+# Compile the model
+stan_model <- stan_model(model_code = model_code, save_dso = TRUE)
+
+# Prepare data list for Stan
+stan_data <- list(
+  N = N,
+  NAO = NAO,
+  AMO = AMO,
+  observed_data = observed_data
+)
+
+# Run MCMC sampling
+fit <- sampling(stan_model, data = stan_data, iter = 2000, warmup = 1000, chains = 4, seed = 1234)
+
+# Print summary of the results
+print(fit, digits = 2)
+
+# trace plot
+traceplot(fit, pars = c('beta0', 'beta1', 'beta3', 'lp__'))
+
+# correlation between predictors -> if linear, high correlation
+mcmc_pairs(as.array(fit), pars = c('beta0', 'beta1', 'beta3'))
+mcmc_dens(as.array(fit), pars = c('beta0', 'beta1', 'beta3'))
+
+posterior_samples <- rstan::extract(fit)
+
+beta0 <- posterior_samples$beta0
+beta1 <- posterior_samples$beta1
+beta3 <- posterior_samples$beta3
+
+num_samples <- length(beta0)
+num_obs <- length(AMO)
+predicted_lambda <- matrix(NA, nrow = num_samples, ncol = num_obs)
+
+for (i in 1:num_samples) {
+  predicted_lambda[i, ] <- exp(beta0[i] + beta1[i] * NAO + beta3[i] * AMO)
+}
+
+predicted_lambda_mean <- colMeans(predicted_lambda)
+
+plot(observed_data, predicted_lambda_mean,
+     xlab = "Observed Landfall Counts",
+     ylab = "Predicted Landfall Counts",
+     main = "Comparison of Observed and Predicted Landfall Counts")
+abline(a = 0, b = 1, col = "red")
+
+mse <- mean((observed_data - predicted_lambda_mean)^2)
+print(paste("Mean Squared Error:", sqrt(mse)))
+
+ss_total <- sum((observed_data - mean(observed_data))^2)
+ss_residual <- sum((observed_data - predicted_lambda_mean)^2)
+r_squared <- 1 - (ss_residual / ss_total)
+print(paste("R-squared:", r_squared))
+
+residuals <- observed_data - predicted_lambda_mean
+
+plot(predicted_lambda_mean, residuals,
+     xlab = "Predicted Landfall Counts",
+     ylab = "Residuals",
+     main = "Residuals vs Fitted Values")
+abline(h = 0, col = "red")
+
+```
+
+```{r}
+
+# Define the model with improved priors and adjusted prior scales
+model_code <- "
+  data {
+    int<lower=0> N;
+    vector[N] AMO;
+    vector[N] SOI;
+    int<lower=0> observed_data[N];
+  }
+  parameters {
+    real beta0;
+    real beta2;
+    real beta3;
+  }
+  model {
+    vector[N] lambda;
+    // Priors
+    beta0 ~ normal(0, 10);
+    beta2 ~ normal(0, 10);
+    beta3 ~ normal(0, 10);
+    // Linear combination for lambda
+    lambda = exp(beta0 + beta2 * SOI + beta3 * AMO);
+    
+    // Likelihood
+    observed_data ~ poisson(lambda);
+  }
+"
+
+# Compile the model
+stan_model <- stan_model(model_code = model_code, save_dso = TRUE)
+
+# Prepare data list for Stan
+stan_data <- list(
+  N = N,
+  AMO = AMO,
+  SOI = SOI,
+  observed_data = observed_data
+)
+
+# Run MCMC sampling
+fit <- sampling(stan_model, data = stan_data, iter = 2000, warmup = 1000, chains = 4, seed = 1234)
+
+# Print summary of the results
+print(fit, digits = 2)
+
+# trace plot
+traceplot(fit, pars = c('beta0', 'beta2', 'beta3', 'lp__'))
+
+# correlation between predictors -> if linear, high correlation
+mcmc_pairs(as.array(fit), pars = c('beta0', 'beta2', 'beta3'))
+mcmc_dens(as.array(fit), pars = c('beta0', 'beta2', 'beta3'))
+
+posterior_samples <- rstan::extract(fit)
+
+beta0 <- posterior_samples$beta0
+beta2 <- posterior_samples$beta2
+beta3 <- posterior_samples$beta3
+
+num_samples <- length(beta0)
+num_obs <- length(AMO)
+predicted_lambda <- matrix(NA, nrow = num_samples, ncol = num_obs)
+
+for (i in 1:num_samples) {
+  predicted_lambda[i, ] <- exp(beta0[i] + beta2[i] * SOI + beta3[i] * AMO)
+}
+
+predicted_lambda_mean <- colMeans(predicted_lambda)
+
+plot(observed_data, predicted_lambda_mean,
+     xlab = "Observed Landfall Counts",
+     ylab = "Predicted Landfall Counts",
+     main = "Comparison of Observed and Predicted Landfall Counts")
+abline(a = 0, b = 1, col = "red")
+
+mse <- mean((observed_data - predicted_lambda_mean)^2)
+print(paste("Mean Squared Error:", sqrt(mse)))
+
+ss_total <- sum((observed_data - mean(observed_data))^2)
+ss_residual <- sum((observed_data - predicted_lambda_mean)^2)
+r_squared <- 1 - (ss_residual / ss_total)
+print(paste("R-squared:", r_squared))
+
+residuals <- observed_data - predicted_lambda_mean
+
+plot(predicted_lambda_mean, residuals,
+     xlab = "Predicted Landfall Counts",
+     ylab = "Residuals",
+     main = "Residuals vs Fitted Values")
+abline(h = 0, col = "red")
+```
+
+```{r}
+
+# Define the model with improved priors and adjusted prior scales
+model_code <- "
+  data {
+    int<lower=0> N;
+    vector[N] AMO;
+    int<lower=0> observed_data[N];
+  }
+  parameters {
+    real beta0;
+    real beta3;
+  }
+  model {
+    vector[N] lambda;
+    // Priors
+    beta0 ~ normal(0, 10);
+    beta3 ~ normal(0, 10);
+    // Linear combination for lambda
+    lambda = exp(beta0 + beta3 * AMO);
+    
+    // Likelihood
+    observed_data ~ poisson(lambda);
+  }
+"
+
+# Compile the model
+stan_model <- stan_model(model_code = model_code, save_dso = TRUE)
+
+# Prepare data list for Stan
+stan_data <- list(
+  N = N,
+  AMO = AMO,
+  observed_data = observed_data
+)
+
+# Run MCMC sampling
+fit <- sampling(stan_model, data = stan_data, iter = 2000, warmup = 1000, chains = 4, seed = 1234)
+
+# Print summary of the results
+print(fit, digits = 2)
+
+# trace plot
+traceplot(fit, pars = c('beta0', 'beta3', 'lp__'))
+
+# correlation between predictors -> if linear, high correlation
+mcmc_pairs(as.array(fit), pars = c('beta0', 'beta3'))
+mcmc_dens(as.array(fit), pars = c('beta0', 'beta3'))
+
+posterior_samples <- rstan::extract(fit)
+
+beta0 <- posterior_samples$beta0
+beta3 <- posterior_samples$beta3
+
+num_samples <- length(beta0)
+num_obs <- length(AMO)
+predicted_lambda <- matrix(NA, nrow = num_samples, ncol = num_obs)
+
+for (i in 1:num_samples) {
+  predicted_lambda[i, ] <- exp(beta0[i] + beta3[i] * AMO)
+}
+
+predicted_lambda_mean <- colMeans(predicted_lambda)
+
+plot(observed_data, predicted_lambda_mean,
+     xlab = "Observed Landfall Counts",
+     ylab = "Predicted Landfall Counts",
+     main = "Comparison of Observed and Predicted Landfall Counts")
+abline(a = 0, b = 1, col = "red")
+
+mse <- mean((observed_data - predicted_lambda_mean)^2)
+print(paste("Mean Squared Error:", sqrt(mse)))
+
+ss_total <- sum((observed_data - mean(observed_data))^2)
+ss_residual <- sum((observed_data - predicted_lambda_mean)^2)
+r_squared <- 1 - (ss_residual / ss_total)
+print(paste("R-squared:", r_squared))
+
+residuals <- observed_data - predicted_lambda_mean
+
+plot(predicted_lambda_mean, residuals,
+     xlab = "Predicted Landfall Counts",
+     ylab = "Residuals",
+     main = "Residuals vs Fitted Values")
+abline(h = 0, col = "red")
+```
+
+```{r}
+amo_ts <- ts(data$AMO, start = c(1951), frequency = 1)  
+plot(amo_ts, main = "AMO Index Time Series", ylab = "AMO Index", xlab = "Year")
+
+adf_test <- adf.test(amo_ts)
+print(adf_test)
+
+amo_diff_ts <- diff(amo_ts)
+plot(amo_diff_ts, main = "Differenced AMO Time Series", ylab = "Differenced AMO Index", xlab = "Year")
+adf_test_diff <- adf.test(amo_diff_ts)
+print(adf_test_diff)
+```
+
+```{r}
+amo_arima_model_diff <- auto.arima(amo_diff_ts)
+print(amo_arima_model_diff)
+plot(forecast(amo_arima_model_diff, h = 10), main = "ARIMA Model Fit for AMO Index")
+
+amo_sarima_model_diff <- auto.arima(amo_diff_ts, seasonal = TRUE)
+print(amo_sarima_model_diff)
+plot(forecast(amo_sarima_model_diff, h = 10), main = "SARIMA Model Fit for AMO Index")
+
+spec <- ugarchspec(mean.model = list(armaOrder = c(1, 1)), variance.model = list(garchOrder = c(1, 1)))
+amo_garch_model <- ugarchfit(spec = spec, data = amo_diff_ts)
+print(amo_garch_model)
+plot(amo_garch_model, which = "all")
+
+#  AIC
+aic_arima <- AIC(amo_arima_model_diff)
+aic_sarima <- AIC(amo_sarima_model_diff)
+aic_garch <- infocriteria(amo_garch_model)["Akaike",]
+
+print(paste("ARIMA AIC:", aic_arima))
+print(paste("SARIMA AIC:", aic_sarima))
+print(paste("GARCH AIC:", aic_garch))
+
 ```
 ```{r}
-# Response
-observed_data <- data$HURRICANE
+amo_garch_forecast <- ugarchforecast(amo_garch_model, n.ahead = 10)
+print(amo_garch_forecast)
 
-# Define the model with improved priors and adjusted prior scales
-model_code <- "
-  data {
-    int<lower=0> N;
-    vector[N] NAO;
-    vector[N] AMO;
-    vector[N] SOI;
-    int<lower=0> observed_data[N];
-  }
-  parameters {
-    real beta0;
-    real beta1;
-    real beta2;
-    real beta3;
-  }
-  model {
-    vector[N] lambda;
-    // Priors
-    beta0 ~ normal(0, 10);
-    beta1 ~ normal(0, 10);
-    beta2 ~ normal(0, 10);
-    beta3 ~ normal(0, 10);
-    // Linear combination for lambda
-    lambda = exp(beta0 + beta1 * NAO + beta2 * SOI + beta3 * AMO);
+# point estimation
+predicted_values <- fitted(amo_garch_forecast)
+
+# re-diff
+last_value <- tail(amo_ts, 1)
+reconstructed_forecast <- cumsum(c(last_value, predicted_values))[-1]
+print(reconstructed_forecast)
+
+
+all_data <- c(amo_ts, reconstructed_forecast)
+all_data_ts <- ts(all_data, start = start(amo_ts), frequency = frequency(amo_ts))
+
+plot(all_data_ts, type = "l", col = "black", lwd = 2, xlab = "Year", ylab = "AMO Index", 
+     main = "AMO Index with GARCH Forecast for Next 10 Years")
+lines(ts(reconstructed_forecast, start = end(amo_ts) + c(1, 0), frequency = frequency(amo_ts)),
+      col = "red", lwd = 2)
+legend("topright", legend = c("Observed AMO", "Predicted AMO"), col = c("black", "red"),
+       lty = c(1, 2), lwd = c(2, 2))
+```
+```{r}
+
+# lambda
+lambda_values <- reconstructed_forecast
+x_values <- 0:8 
+poisson_data <- data.frame()
+
+for (lambda in lambda_values) {
+  poisson_prob <- dpois(x_values, lambda)  # 計算泊松概率
+  temp_data <- data.frame(x = x_values, prob = poisson_prob, lambda = factor(lambda))
+  poisson_data <- rbind(poisson_data, temp_data)  # 合併數據框
+}
+
+ggplot(poisson_data, aes(x = x, y = prob, fill = lambda)) +
+  geom_bar(stat = "identity", position = "dodge", color = "black") +
+  facet_wrap(~ lambda, scales = "free_y") +
+  labs(x = "Number of Events (x)", y = "Probability") +  # 只保留坐標軸標籤
+  theme_minimal() +
+  theme(
+    plot.title = element_blank(),  # 去除全局標題
+    strip.text = element_blank(),  # 去除每個小圖的標題
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12),
+    legend.position = "none"  # 去除圖例
+  ) +
+  scale_fill_brewer(palette = "Blues")
+
+```
+
+```{r}
+Hurricane_Landfall_ts <- ts(data$LANDFALL_COUNTS, start = c(1951), frequency = 1)  
+plot(Hurricane_Landfall_ts, main = "Hurricane Landfall Time Series", ylab = "Frequency", xlab = "Year")
+
+adf_test <- adf.test(Hurricane_Landfall_ts)
+print(adf_test)
+
+Hurricane_Landfall_ts_diff <- diff(Hurricane_Landfall_ts)
+plot(Hurricane_Landfall_ts_diff, main = "Differenced Frequency Time Series", ylab = "Differenced Frequency", xlab = "Year")
+adf_test_diff <- adf.test(amo_diff_ts)
+print(adf_test_diff)
+```
+
+```{r}
+arima_Hurricane_Landfall_ts_diff <- auto.arima(Hurricane_Landfall_ts_diff)
+print(arima_Hurricane_Landfall_ts_diff)
+plot(forecast(arima_Hurricane_Landfall_ts_diff, h = 10), main = "ARIMA Model Fit for Frequency")
+
+sarima_Hurricane_Landfall_ts_diff <- auto.arima(Hurricane_Landfall_ts_diff, seasonal = TRUE)
+print(sarima_Hurricane_Landfall_ts_diff)
+plot(forecast(sarima_Hurricane_Landfall_ts_diff, h = 10), main = "SARIMA Model Fit for Frequency Index")
+
+spec <- ugarchspec(mean.model = list(armaOrder = c(1, 1)), variance.model = list(garchOrder = c(1, 1)))
+frequency_garch_model <- ugarchfit(spec = spec, data = Hurricane_Landfall_ts_diff, solver = "hybrid", solver.control = list(maxit = 1000))
+print(frequency_garch_model)
+plot(frequency_garch_model, which = "all")
+
+
+
+#  AIC
+aic_arima <- AIC(arima_Hurricane_Landfall_ts_diff)
+aic_sarima <- AIC(sarima_Hurricane_Landfall_ts_diff)
+aic_garch <- infocriteria(amo_garch_model)["Akaike",]
+
+print(paste("ARIMA AIC:", aic_arima))
+print(paste("SARIMA AIC:", aic_sarima))
+print(paste("GARCH AIC:", aic_garch))
+
+```
+```{r}
+frequency_garch_forecast <- ugarchforecast(frequency_garch_model, n.ahead = 10)
+print(frequency_garch_forecast)
+
+# point estimation
+predicted_values <- fitted(frequency_garch_forecast)
+
+# re-diff
+last_value <- tail(Hurricane_Landfall_ts, 1)
+reconstructed_forecast <- cumsum(c(last_value, predicted_values))[-1]
+print(reconstructed_forecast)
+
+
+all_data <- c(Hurricane_Landfall_ts, reconstructed_forecast)
+all_data_ts <- ts(all_data, start = start(Hurricane_Landfall_ts), frequency = frequency(Hurricane_Landfall_ts))
+
+plot(all_data_ts, type = "l", col = "black", lwd = 2, xlab = "Year", ylab = "Frequency", 
+     main = "Frequency with GARCH Forecast for Next 10 Years")
+lines(ts(reconstructed_forecast, start = end(Hurricane_Landfall_ts) + c(1, 0), frequency = frequency(Hurricane_Landfall_ts)),
+      col = "red", lwd = 2)
+legend("topright", legend = c("Observed Frequency", "Predicted Frequency"), col = c("black", "red"),
+       lty = c(1, 2), lwd = c(2, 2))
+```
+```{r}
+steps = 100
+sample_num = 10000
+
+sim <- ugarchsim(frequency_garch_model, n.sim = steps, m.sim = sample_num)
+simulated_paths <- fitted(sim)
+
+reconstructed_forecasts <- list()
+
+for (i in 1:sample_num) {
+  predicted_values <- as.numeric(simulated_paths[, i])
+
+  last_value <- tail(Hurricane_Landfall_ts, 1)
+  reconstructed_forecast <- cumsum(c(last_value, predicted_values))[-1]
+  
+  reconstructed_forecast[reconstructed_forecast < 0] <- 0
+  reconstructed_forecasts[[i]] <- reconstructed_forecast
+}
+
+x_range <- c(1, length(Hurricane_Landfall_ts) + steps)
+y_range <- range(c(Hurricane_Landfall_ts, unlist(reconstructed_forecasts)))
+
+plot(Hurricane_Landfall_ts, type = "l", col = "blue", lwd = 2,
+     xlim = x_range, ylim = y_range,
+     xlab = "Time", ylab = "Value", main = "Original Data and Reconstructed Sample Paths (n.sim = 10)")
+  
+
+for (i in 1:sample_num) {
+  start_time <- length(Hurricane_Landfall_ts) + 1
+  time_index <- seq(start_time, start_time + length(reconstructed_forecasts[[i]]) - 1)
+  lines(time_index, reconstructed_forecasts[[i]], col = "blue", lwd = 1)
+}
+
+time_index <- seq(1, length(Hurricane_Landfall_ts))
+lines(time_index, Hurricane_Landfall_ts, col = "black")
+
+legend("topright", legend = c("Original Data", "Reconstructed Forecast Paths"), 
+       col = c("black", "blue"), lty = 1, lwd = c(2, 1))
+```
+```{r}
+Hurricane_Landfall_classified <- ifelse(Hurricane_Landfall_ts >= 0 & Hurricane_Landfall_ts <= 2, 0,
+                                 ifelse(Hurricane_Landfall_ts > 2 & Hurricane_Landfall_ts <= 5, 1, 
+                                        ifelse(Hurricane_Landfall_ts > 5, 2, NA)))
+
+classified_forecasts <- lapply(reconstructed_forecasts, function(forecast) {
+  ifelse(forecast >= 0 & forecast <= 2, 0,
+         ifelse(forecast > 2 & forecast <= 5, 1, 
+                ifelse(forecast > 5, 2, NA)))
+})
+
+
+plot(Hurricane_Landfall_classified, type = "l", col = "blue", lwd = 2,
+     xlim = c(1, length(Hurricane_Landfall_classified) + steps),
+     ylim = c(0, 2), xlab = "Time", ylab = "Classified Value", main = "Classified Original and Forecasted Data",
+     yaxt = "n")
+
+time_index <- seq(1,length(Hurricane_Landfall_classified))
+lines(time_index,Hurricane_Landfall_classified_ts, lwd = 1)
+
+axis(2, at = c(0, 1, 2), labels = c(0, 1, 2))
+
+for (i in 1:sample_num) {
+  start_time <- length(Hurricane_Landfall_classified) + 1
+  time_index <- seq(start_time, start_time + length(classified_forecasts[[i]]) - 1)
+
+  lines(time_index, classified_forecasts[[i]], col = "blue", lwd = 1)
+}
+legend("topright", legend = c("Original Data", "Forecasted Paths"), 
+       col = c("blue", "black"), lty = 1, lwd = c(2, 1))
+
+```
+```{r}
+state_count <- matrix(0, nrow = 3, ncol = 3)
+
+for (i in 1:(length(classified_data) - 1)) {
+  from_state <- classified_data[i]
+  to_state <- classified_data[i + 1]
+  state_count[from_state + 1, to_state + 1] <- state_count[from_state + 1, to_state + 1] + 1
+}
+
+transition_matrix <- state_count / rowSums(state_count)
+
+print("Transition Matrix:")
+print(transition_matrix)
+
+transition_df <- melt(transition_matrix)
+colnames(transition_df) <- c("From", "To", "Probability")
+
+ggplot(data = transition_df, aes(x = To, y = From, fill = Probability)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(title = "Transition Probability Matrix", x = "To State", y = "From State")
+
+```
+```{r}
+
+transition_array <- array(0, dim = c(3, 3, steps))
+
+for (i in 1:(sample_num - 1)) { 
+  for (j in 1:steps) {
+    current_state <- classified_forecasts[[i]][j]
+    next_state <- classified_forecasts[[i + 1]][j]
     
-    // Likelihood
-    observed_data ~ poisson(lambda);
+    transition_array[current_state + 1, next_state + 1, j] <- transition_array[current_state + 1, next_state + 1, j] + 1
   }
-"
+}
 
-# Compile the model
-stan_model <- stan_model(model_code = model_code, save_dso = TRUE)
+transition_prob_array <- array(0, dim = c(3, 3, steps))
 
-# Prepare data list for Stan
-stan_data <- list(
-  N = N,
-  NAO = NAO,
-  AMO = AMO,
-  SOI = SOI,
-  observed_data = observed_data
-)
+for (j in 1:steps) {
+  for (row in 1:3) {
+    row_sum <- sum(transition_array[row, , j])
+    if (row_sum > 0) {
+      transition_prob_array[row, , j] <- transition_array[row, , j] / row_sum  # 将该行的每个元素除以总和
+    }
+  }
+}
 
-# Run MCMC sampling
-fit <- sampling(stan_model, data = stan_data, iter = 2000, warmup = 1000, chains = 4, seed = 1234)
 
-# Print summary of the results
-print(fit)
+min_prob <- min(transition_prob_array, na.rm = TRUE)
+max_prob <- max(transition_prob_array, na.rm = TRUE)
 
-traceplot(fit)
-traceplot(fit, pars = 'lp__')
+for (j in 1:steps) {
+  transition_matrix <- transition_prob_array[, , j]
+  transition_df <- melt(transition_matrix)
+  colnames(transition_df) <- c("From", "To", "Probability")
+  
+  p = ggplot(data = transition_df, aes(x = To, y = From, fill = Probability)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "blue", limits = c(min_prob, max_prob)) +
+  labs(title = sprintf("Transition Probability Matrix at Time Step %d", j),
+         x = "To State", y = "From State") +
+  theme_minimal()
+  print(p)
+}
 ```
 
