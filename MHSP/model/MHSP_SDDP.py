@@ -259,7 +259,7 @@ class StageProblem_Decomposition:
         self.b_staging_cap = [0  for W in range(args.W)]
         for w in range(args.W):
             if stage0 == True:
-                self.model.addConstr(self.u[w] == self.y[w])
+                self.model.addConstr(self.u[w] == self.y[w] + self.idata.Cap_w[w])
             else:
                 self.b_staging_cap[w] = self.model.addConstr(self.u[w] - self.y[w] == 0)
 
@@ -618,7 +618,7 @@ class StageProblem_extended:
         self.b_staging_cap = [0  for W in range(args.W)]
         for w in range(args.W):
             if stage0 == True:
-                self.model.addConstr(self.u[w] == self.y[w])
+                self.model.addConstr(self.u[w] == self.y[w] + self.idata.Cap_w[w])
             else:
                 self.b_staging_cap[w] = self.model.addConstr(self.u[w] - self.y[w] == 0)
 
@@ -1053,10 +1053,10 @@ class solve_SDDP:
                 cut_iter_temp = self.stage_root.add_cut(LB,0,0,sample_path[0],pi_b,pi_c,Benders_cut_pi)
 
             cutviol_iter = cutviol_iter + cut_iter_temp
-            if(self.args.Strategic_node_sovling == 0):
-                pi_b,pi_c,pi_e,pi_h,cut_pi,LB =  self.stage_root.backward_run()
-            elif(self.args.Strategic_node_sovling == 1):
-                pi_b,pi_c,LB,Benders_cut_pi =  self.stage_root.backward_run(iter)
+            # if(self.args.Strategic_node_sovling == 0):
+            #     pi_b,pi_c,pi_e,pi_h,cut_pi,LB =  self.stage_root.backward_run()
+            # elif(self.args.Strategic_node_sovling == 1):
+            #     pi_b,pi_c,LB,Benders_cut_pi =  self.stage_root.backward_run(iter)
 
             LB_list.append(LB)
             if(iter%50 == 0):

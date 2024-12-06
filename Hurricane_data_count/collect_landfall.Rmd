@@ -1,0 +1,363 @@
+``{r setup, include =FALSE}
+# This is a code block
+
+```{r}
+library(ggplot2) # Data visualization
+library(readr) # CSV file I/O, e.g. the read_csv function
+library(maps) # Spatial analysis
+library(gdata) # Spatial analysis
+library(maptools) # Map of the US
+library(gstat) # Spatial analysis
+library(rgeos) # Spatial analysis
+library(sp) # Spatial analysis
+library(rgdal) # Spatial analysis
+library(plotly) # Data visualization
+library(data.table) # Data manipulation
+library("wordcloud") # Data visualization
+library("tm") # Data visualization
+library("NLP") # Data visualization
+```
+
+# Uploading the atlantic data {.tabset}
+
+Uploading the input data and looking at the data structure 
+
+## Data sample
+
+```{r}
+data1<-read.csv("atlantic.csv")
+head(data1)
+```
+<br/>
+<hr/>
+
+## Data structure
+
+```{r}
+str(data1)
+```
+
+<br/>
+
+# Data manipulation 
+
+Reformatting the coordinates and subset the data retaning only storms records from 1900.
+Scientists consider the HURDAT2 record to be accurate for landfall statistics from 1900 onward
+as the population density from 1900 onward along the U.S. coastline was sufficient to
+ensure all tropical storms were recorded (Landsea, 2007). 
+Final data frame is shown below.
+
+```{r}
+# Extract year and month and storing them in separate columns
+date.s<-as.character(data1$Date)
+data1$Year<-substr(date.s,1,4)
+data1$Month<-substr(date.s,5,6) 
+data1<-trim(data1, recode.factor=TRUE)
+
+# Format the coordinates
+dat<-as.character(data1$Latitude)
+new<-substr(dat,1,nchar(dat)-1)
+lat<-as.numeric(new)
+dat<-as.character(data1$Longitude)
+new<-substr(dat,1,nchar(dat)-1)
+long<-as.numeric(new)
+long<- -abs(long)
+coord<-as.data.frame(long)
+coord<-cbind(coord, lat)
+out<-subset(coord, long < -100) ##Find the outliers
+total<-cbind(data1, coord)
+outRM<-total[-c(22985,22986),]  ##Remove the outliers
+
+# Subset the data retaning only hurricane records from a certain date
+hu<-outRM
+
+hu.new<-hu[hu$Year>=1900,] # Retain data only from 1900 as earlier data might not be totally reliable
+hu.new$MaxWind.mph<-hu.new$Maximum.Wind*1.150779 # Convert wind speed from knot to miles per hour
+hu.new<-hu.new[,c("ID","Name","Date","Time","Year","Month","MaxWind.mph","long","lat")] # Retain only columns of interest
+hu.new$Yearmonth<-as.numeric(do.call(paste, c(hu.new[c("Year", "Month")], sep = ""))) #Creating a Yearmonth columns which will be useful for identifying the landfall date
+hu.new<-hu.new[ave(rep(1, nrow(hu.new)), hu.new$ID, FUN=length)>1,] # Removing the hurricanes with only one record
+head(hu.new)
+```
+
+
+
+# Identifying landfall points
+Intersecting each storm track with the US coastline to identify landfall points. I consider one point per landfall even if a storm can have multiple landfall.
+If multiple landfalls occur, I pick the landfall point with the maximum wind speed. Finally, I select only storms which make landfall as hurricanes (Max wind speed >= 75 mph).
+
+```{r}
+
+# Uploading the US map and converting it to a spatial polygon
+# Uploading and manipulating the US map
+usa <- map("state", fill = TRUE, plot=FALSE) 
+IDs <- sapply(strsplit(usa$names, ":"), function(x) x[1])
+usa <- map2SpatialPolygons(usa, IDs=IDs, proj4string=CRS("+proj=longlat +datum=WGS84"))
+
+# First I need to dissolve and create a unique polygon, then I'll create the coastal boundary
+crs  <- CRS("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-110 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m") 
+usa.p<-spTransform(usa, crs)
+usa.p<-gBuffer(usa.p, byid=TRUE, width=1) 
+usa.u<- gUnaryUnion(usa.p)
+usa.l<-as(usa.u,'SpatialLines') 
+crs.new<-CRS(proj4string(usa)) 
+usa.l<-spTransform(usa.l, crs.new)
+
+
+hu.ID<-unique(hu.new$ID) # Identifying the numbers of hurricanes on the dataset
+m.data<-NULL # Initiate a NULL matrix where to store the results recursively 
+
+options(warn=-1) # Removing the warning messages coming from the krige function
+for (i in 1:length(hu.ID)) {
+  
+  id.storm<-hu.ID[i]
+  storm.i<-hu.new[hu.new$ID==id.storm,]
+    
+  # Transform the Hurricane track into a line
+  storm.c<- data.frame(x=storm.i$long,y=storm.i$lat)
+  coordinates(storm.c)<-~x+y 
+  proj4string(storm.c) <- CRS(proj4string(usa))
+  storm.l <- SpatialLines(list(Lines(list(Line(coordinates(storm.c))),"X")))
+  proj4string(storm.l) <- CRS(proj4string(usa)) ## attributing the coordinate system of the usa map (WGS84) to the ike track
+    
+  # Finding the landfall point of the hurricane (intersection between the track and the US coastline)
+  cross<-gIntersection(storm.l,usa.l)
+  
+  # If there is intersection, identify the wind speed, date (year and month) and State at landfall
+  
+  if (length(cross)>0)
+  {
+  storm.int<-data.frame(x=storm.i$long,y=storm.i$lat,wmax=storm.i$MaxWind.mph,tim=storm.i$Yearmonth)
+  colnames(storm.int)<-c("Long","Lat","Max_Speed","Yearmonth")
+  
+  # Convert the event track info into a spatial data frame
+  coordinates(storm.int) <- ~Long+Lat
+  proj4string(storm.int) <- CRS(proj4string(usa))
+    
+  # Compute the interpolated values of the wind speed at landfall
+  landfall.k <- krige(Max_Speed~1, storm.int, cross, debug.level = 0)
+  landfall.w<-landfall.k$var1.pred
+  
+  # Compute the interpolated values of the Year month at landfall
+  landfall.kt <- krige(Yearmonth~1, storm.int, cross, debug.level = 0)
+  landfall.t<-landfall.kt$var1.pred
+  
+  landfall.p<-cbind(cross@coords,landfall.w,landfall.t)
+  colnames(landfall.p)[3:4]<-c("Max.Wind","Time")
+  
+  # Multiple landfalls can occure (Hurricane eye can intersect the coastline several times)
+  # I will consider only one landfall per storm and pick the landfall point with the maximum wind
+  lfmax.p<-landfall.p[which.max(landfall.p[,3]),]
+  lfmax.p<-t(as.matrix(lfmax.p))
+  lfmax.p[,c("Time")]<-round(lfmax.p[,c("Time")]) ## rounding the time in case the landfall point happens between 2 months
+  
+  # Identifying the state where landfall occurs
+  lfmax.p1<-data.frame(x=lfmax.p[1], y=lfmax.p[2], wmax=lfmax.p[3])
+  coordinates(lfmax.p1)<-~x+y
+  proj4string(lfmax.p1) <- CRS(proj4string(usa))
+  crs  <- CRS("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-110 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m") 
+  lfmax.p1_pla<-spTransform(lfmax.p1, crs)
+  usa_pla<-spTransform(usa, crs)
+  dist<-gDistance(lfmax.p1_pla,usa_pla, byid=TRUE)
+  state.name<-rownames(dist)[which.min(dist)]
+   
+  # storm info to append
+  st.info<-storm.i[1,c("ID","Name")]
+  st.info<-cbind(st.info,state.name,lfmax.p)
+  st.info$Year<-substr(st.info$Time,1,4)
+  st.info$Month<-substr(st.info$Time,5,6)
+  st.info<-st.info[,-which(colnames(st.info)=="Time")]
+  
+  # Append storm info
+  m.data<-rbind(m.data,st.info)
+  }
+} 
+options(warn=0)
+
+# m.data<-m.data[m.dat
+
+# Add Hurricane category based on the Saffir-Simpson Hurricane Wind Scale
+brk<-c(-Inf,74,95,110,129,156,+Inf)
+m.data$cat<-cut(m.data$Max.Wind,breaks=brk,include.lowest=T,include.highest=T,  labels=c(0,1,2,3,4,5))
+# table(m.data$cat)
+
+# Convert the category to numeric
+m.data$cat=as.numeric(levels(m.data$cat))[m.data$cat]
+m.data$Year=as.numeric(m.data$Year)
+
+m.data<-m.data[m.data$Max.Wind >= 75, ]
+
+# Let's visualise the resulting matrix with the landfall points
+head(m.data)
+```
+
+
+
+
+
+# Landfall points map by category 
+
+
+```{r, message=F, warning=F, fig.width=10}
+# geo styling
+g <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showland = TRUE,
+  landcolor = toRGB("gray95"),
+  subunitcolor = toRGB("gray85"),
+  countrycolor = toRGB("gray85"),
+  countrywidth = 0.5,
+  subunitwidth = 0.5
+)
+
+p <- plot_geo(m.data, lat = ~y, lon = ~x) %>%
+  add_markers(
+   text = ~paste(Year,"<br />",Name,"<br />","Cat:",cat),hoverinfo="text",
+    color = ~m.data$cat, size = ~m.data$Max.Wind,
+    marker = list(colorbar = list(len = 0.2, title = "Landfall Category"))
+  ) %>%
+  layout(
+    title = 'US Hurricane Landfall points', geo = g
+  )
+  
+p
+
+write.csv(m.data,"landfall_dat.csv", row.names = FALSE)
+```
+
+
+# Histogram of hurricane landfall by category over time {.tabset}
+
+## Graph
+
+```{r}
+
+m.all<-xtabs(~Year+cat,m.data)
+m.all<-as.data.frame.matrix(m.all, keep.rownames=T)
+m.all<-tibble::rownames_to_column(m.all, var = "Year")
+m.all$Year=as.numeric(m.all$Year)
+colnames(m.all)<-c("Year","Cat1","Cat2","Cat3","Cat4","Cat5")
+
+timef<-as.data.frame(seq(min(m.all$Year), max(m.all$Year)))
+colnames(timef)<-c("Year")
+
+m.all<-merge(m.all,timef, by="Year", all=T)
+m.all[is.na(m.all)] <- 0
+  
+p <- plot_ly(m.all, x = ~Year, y = ~Cat1, type = 'bar', name = 'Cat1')
+p %>%
+add_trace(y = ~Cat2, name = 'Cat2') %>%
+add_trace(y = ~Cat3, name = 'Cat3') %>%
+add_trace(y = ~Cat4, name = 'Cat4') %>%
+add_trace(y = ~Cat5, name = 'Cat5') %>%
+layout(yaxis = list(title = 'Count'), barmode = 'stack') 
+  
+```
+
+<br/>
+<hr/>
+
+
+## Data
+
+```{r}
+head(m.all)
+tail(m.all)
+```
+<br/>
+
+
+# Box Plot of Max wind speed at landfall by selected States {.tabset}
+
+## Graph
+
+```{r}
+m.data1<-subset(m.data,state.name %in% c("florida","louisiana","texas","north carolina"))
+
+# Plot a boxplot of the maximum wind speed at landfall for the States selected above
+options(warn = -1) 
+b <- plot_ly(m.data1, y = ~Max.Wind, color = ~state.name, type = "box") %>%
+layout(title='Max Wind speed at landfall', yaxis = list(title = 'Max Wind speed [mph]'))
+b
+options(warn = 0) 
+
+```
+<br/>
+<hr/>
+
+## Data
+
+```{r}
+# Top 4 states by number of landfalls
+table(m.data$state.name)
+```
+<br/>
+
+# Histogram of hurricane landfall annual frequency by State and category {.tabset}
+
+## Graph
+
+```{r}
+
+m.freq<-xtabs(~state.name+cat,m.data)
+m.freq<-as.data.frame.matrix(m.freq, keep.rownames=T)
+m.freq1<-m.freq/(max(m.data$Year)-min(m.data$Year)+1)
+m.freq1$All<-apply(m.freq1,1,sum)
+m.freq1<-tibble::rownames_to_column(m.freq1, var = "State")
+colnames(m.freq1)<-c("State","Cat1","Cat2","Cat3","Cat4","Cat5","All")
+  
+  fr <- plot_ly(m.freq1, x = ~State, y = ~All, type = 'bar', name = 'All')
+fr %>%
+add_trace(y = ~Cat1, name = 'Cat1') %>%
+add_trace(y = ~Cat2, name = 'Cat2') %>%
+add_trace(y = ~Cat3, name = 'Cat3') %>%
+add_trace(y = ~Cat4, name = 'Cat4') %>%
+add_trace(y = ~Cat5, name = 'Cat5') %>%
+layout(title='Annual landfall frequency',yaxis = list(title = 'frequency'), barmode = 'group') 
+  
+```
+
+<br/>
+<hr/>
+
+## Data
+
+```{r}
+# Top 4 states by number of landfalls
+m.freq1
+```
+<br/>
+
+# Landfall split by month {.tabset}
+
+## Graph
+
+```{r}
+m.month<- t(table(m.data$Month))
+m.month<-as.data.frame.matrix(t(m.month), keep.rownames=T)
+m.month<-tibble::rownames_to_column(m.month, var = "Month")
+colnames(m.month)<-c("Month","Count")
+m.month$Month<-month.abb[as.numeric(m.month$Month)]
+
+pie <- plot_ly(m.month,labels=~Month, values = ~Count, type = 'pie',
+   textposition = 'inside',
+        textinfo = 'label+percent',
+        insidetextfont = list(color = '#FFFFFF'),
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+                      #The 'pull' attribute can also be used to create space between the sectors
+        showlegend = FALSE) %>%
+  layout(title = 'Landfall Count by Month')
+pie
+```
+
+<br/>
+<hr/>
+
+## Data
+
+```{r}
+# Top 4 states by number of landfalls
+m.month
+```
+<br/>

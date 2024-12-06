@@ -1,0 +1,287 @@
+---
+title: "Regression"
+output: html_document
+date: "2022-09-22"
+---
+
+## Package
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(zoo)
+library(dplyr)
+library(ggplot2) 
+library(maps)
+library(sp)
+library(maptools)
+library(geosphere)
+library(MASS)
+library(viridis)
+library(rstan)
+library(readr)
+library(bayesplot)
+library(tidyr)
+library(loo)
+library(forecast)
+library(rugarch)
+library(tseries)
+```
+
+```{r}
+# Set a seed for reproducibility
+set.seed(123)
+
+# Load data from a CSV file
+landfall_data <- read_csv("data_counts/landfall_dat.csv")
+```
+```{r}
+landfall_data$color <- ifelse(landfall_data$x > -81.5, "red", "blue")
+
+# Get US map data
+us_map <- map_data("state")
+
+# Plot the US map with hurricane landfall locations colored by condition
+ggplot() +
+  # Add the US map
+  geom_polygon(data = us_map, aes(x = long, y = lat, group = group), 
+               fill = "lightgray", color = "black") +
+  # Add hurricane landfall points with conditional colors
+  geom_point(data = landfall_data, aes(x = x, y = y, color = color), 
+             size = 2, alpha = 0.7) +
+  scale_color_identity() + # Use the specified colors directly
+  labs(title = "Hurricane Landfall Locations by Longitude",
+       x = "Longitude",
+       y = "Latitude") +
+  theme_minimal()
+```
+```{r}
+# Separate into two data frames based on longitude condition
+df_Atlantic <- subset(landfall_data, x > -81.5)  # Longitude > -81.5
+df_Gulf <- subset(landfall_data, x <= -81.5)  # Longitude <= -81.5
+
+write.csv(df_Atlantic,"A.csv")
+write.csv(df_Gulf,"G.csv")
+
+```
+
+
+
+```{r}
+# Load datasets
+data_g <- read.csv("G.csv")
+data_a <- read.csv("A.csv")
+
+# Count number of landfalls per year
+count_g <- data_g %>% group_by(Year) %>% summarise(Count_G = n())
+count_a <- data_a %>% group_by(Year) %>% summarise(Count_A = n())
+
+# Fill missing years
+all_years <- data.frame(Year = seq(min(c(count_g$Year, count_a$Year)), 
+                                   max(c(count_g$Year, count_a$Year)), 
+                                   by = 1))
+
+count_g <- full_join(all_years, count_g, by = "Year") %>% replace_na(list(Count_G = 0))
+count_a <- full_join(all_years, count_a, by = "Year") %>% replace_na(list(Count_A = 0))
+
+combined_data <- full_join(count_g, count_a, by = "Year")
+
+```
+
+```{r}
+# Plot for Count_G
+plot(combined_data$Year, combined_data$Count_G, type = "o", col = "blue",
+     xlab = "Year", ylab = "Number of Landfalls", main = "Hurricane Landfall Counts (File G)")
+
+
+
+# Plot for Count_A
+plot(combined_data$Year, combined_data$Count_A, type = "o", col = "red",
+     xlab = "Year", ylab = "Number of Landfalls", main = "Hurricane Landfall Counts (File A)")
+
+
+
+
+
+
+```
+
+```{r}
+# Decompose Count_G
+ts_g <- ts(combined_data$Count_G, start = min(combined_data$Year), frequency = 1)
+adf_test <- adf.test(ts_g)
+print(adf_test)
+
+# Decompose Count_A
+ts_a <- ts(combined_data$Count_A, start = min(combined_data$Year), frequency = 1)
+adf_test <- adf.test(ts_a)
+print(adf_test)
+
+ts_g_diff <- diff(ts_g)
+plot(Hurricane_Landfall_ts_diff, main = "Differenced Frequency Time Series", ylab = "Differenced Frequency", xlab = "Year")
+adf.test(ts_g_diff)
+
+
+ts_a_diff <- diff(ts_a)
+plot(Hurricane_Landfall_ts_diff, main = "Differenced Frequency Time Series", ylab = "Differenced Frequency", xlab = "Year")
+adf.test(ts_a_diff)
+
+
+```
+
+
+```{r}
+# ADF Test for Count_G
+adf_g <- adf.test(combined_data$Count_G, alternative = "stationary")
+print(adf_g)
+
+# ADF Test for Count_A
+adf_a <- adf.test(combined_data$Count_A, alternative = "stationary")
+print(adf_a)
+```
+
+```{r}
+# Fit ARIMA for Count_G
+arima_g <- auto.arima(ts_g)
+summary(arima_g)
+
+# Fit ARIMA for Count_A
+arima_a <- auto.arima(ts_a)
+summary(arima_a)
+```
+
+```{r}
+# Fit SARIMA for Count_G
+sarima_g <- Arima(ts_g, order = c(1, 1, 1), seasonal = c(1, 0, 1))
+summary(sarima_g)
+
+# Fit SARIMA for Count_A
+sarima_a <- Arima(ts_a, order = c(1, 1, 1), seasonal = c(1, 0, 1))
+summary(sarima_a)
+```
+
+```{r}
+
+spec_g <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
+                     mean.model = list(armaOrder = c(0, 0)))
+garch_g <- ugarchfit(spec = spec_g, data = ts_g_diff)
+print(garch_g)
+
+spec_a <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
+                     mean.model = list(armaOrder = c(0, 0)))
+garch_a <- ugarchfit(spec = spec_a, data = ts_a_diff)
+print(garch_a)
+
+
+```
+```{r}
+# Ensure correct usage of AIC and information criteria
+arima_g_aic <- as.numeric(AIC(arima_g))
+sarima_g_aic <- as.numeric(AIC(sarima_g))
+garch_g_aic <- as.numeric(infocriteria(garch_g)["Akaike",])
+
+arima_a_aic <- as.numeric(AIC(arima_a))
+sarima_a_aic <- as.numeric(AIC(sarima_a))
+garch_a_aic <- as.numeric(infocriteria(garch_a)["Akaike",])
+
+# Combine results into a data frame
+model_comparison <- data.frame(
+  Model = c("ARIMA (G)", "SARIMA (G)", "GARCH (G)", "ARIMA (A)", "SARIMA (A)", "GARCH (A)"),
+  AIC = c(arima_g_aic, sarima_g_aic, garch_g_aic, arima_a_aic, sarima_a_aic, garch_a_aic)
+)
+
+# Sort by AIC to identify the best model
+model_comparison <- model_comparison[order(model_comparison$AIC), ]
+print(model_comparison)
+```
+```{r}
+# Gulf
+steps = 1000
+sample_num = 100
+
+
+# Sample 10,000 observations from the GARCH model for Count_G
+garch_g_sim <- ugarchsim(garch_g, n.sim = steps, m.sim=sample_num)
+garch_g_path <- fitted(garch_g_sim)
+
+reconstructed_forecasts <- list()
+
+for (i in 1:sample_num) {
+  predicted_values <- as.numeric(garch_g_path[, i])
+  predicted_values[predicted_values < 0] <- 0
+  reconstructed_forecasts[[i]] <- predicted_values
+}
+
+x_range <- c(1, length(ts_g) + steps)
+y_range <- range(c(ts_g, unlist(reconstructed_forecasts)))
+
+plot(ts_g, type = "l", col = "blue", lwd = 2,
+     xlim = x_range, ylim = y_range,
+     xlab = "Time", ylab = "Value", main = "Original Data and Reconstructed Sample Paths (n.sim = 10)")
+
+for (i in 1:sample_num) {
+  start_time <- length(ts_g) + 1
+  time_index <- seq(start_time, start_time + length(reconstructed_forecasts[[i]]) - 1)
+  lines(time_index, reconstructed_forecasts[[i]], col = "blue", lwd = 1)
+}
+
+time_index <- seq(1, length(ts_g))
+lines(time_index, ts_g, col = "black")
+
+legend("topright", legend = c("Original Data", "Reconstructed Forecast Paths"), 
+       col = c("black", "blue"), lty = 1, lwd = c(2, 1))
+
+# ----------------------------------------------------------
+
+# Sample 10,000 observations from the GARCH model for Count_G
+garch_a_sim <- ugarchsim(garch_a, n.sim = steps, m.sim=sample_num)
+garch_a_path <- fitted(garch_a_sim)
+
+reconstructed_forecasts <- list()
+
+for (i in 1:sample_num) {
+  predicted_values <- as.numeric(garch_a_path[, i])
+  predicted_values[predicted_values < 0] <- 0
+  reconstructed_forecasts[[i]] <- predicted_values
+}
+
+x_range <- c(1, length(ts_a) + steps)
+y_range <- range(c(ts_a, unlist(reconstructed_forecasts)))
+
+plot(ts_a, type = "l", col = "blue", lwd = 2,
+     xlim = x_range, ylim = y_range,
+     xlab = "Time", ylab = "Value", main = "Original Data and Reconstructed Sample Paths (n.sim = 10)")
+
+for (i in 1:sample_num) {
+  start_time <- length(ts_a) + 1
+  time_index <- seq(start_time, start_time + length(reconstructed_forecasts[[i]]) - 1)
+  lines(time_index, reconstructed_forecasts[[i]], col = "blue", lwd = 1)
+}
+
+time_index <- seq(1, length(ts_a))
+lines(time_index, ts_g, col = "black")
+
+legend("topright", legend = c("Original Data", "Reconstructed Forecast Paths"), 
+       col = c("black", "blue"), lty = 1, lwd = c(2, 1))
+
+```
+```{r}
+
+classified_forecasts <- lapply(reconstructed_forecasts, function(forecast) {
+  ifelse(forecast >= 0 & forecast <= 2, 0,
+         ifelse(forecast > 2 & forecast <= 5, 1, 
+                ifelse(forecast > 5, 2, NA)))
+})
+
+
+ts_g_classified <- ifelse(ts_g >= 0 & ts_g <= 2, 0,
+                                 ifelse(ts_g > 2 & ts_g <= 5, 1, 
+                                        ifelse(ts_g > 5, 2, NA)))
+
+ts_a_classified <- ifelse(ts_a >= 0 & ts_a <= 2, 0,
+                                 ifelse(ts_a > 2 & ts_a <= 5, 1, 
+                                        ifelse(ts_a > 5, 2, NA)))
+
+plot(ts_g_classified)
+plot(ts_a_classified)
+```
+

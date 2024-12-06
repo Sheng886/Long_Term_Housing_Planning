@@ -208,7 +208,7 @@ class Benders():
         for n in range(args.TN):
             for w in range(args.W):
                 if n == 0:
-                    self.master.addConstr(self.u[n,w] == self.y[n,w])
+                    self.master.addConstr(self.u[n,w] == self.y[n,w] + self.idata.Cap_w[w])
                 else:
                     parent_node = self.tree[n].parent
                     self.master.addConstr(self.u[n,w] == self.u[parent_node,w] + self.y[n,w])
