@@ -68,6 +68,8 @@ class Arguments:
         self._parser.add_argument('--Hurricane_landfall_Gulf', type=str, default='generator_data/Hurricane_landfall_Gulf.csv', help='Hurricane_landfall_Gulf file path')
         self._parser.add_argument('--Regression_par', type=str, default='generator_data/Regression_par.xlsx', help='Regression_par file path')
         self._parser.add_argument('--dataall', type=str, default='generator_data/Data_all.csv', help='Regression_par file path')
+        self._parser.add_argument('--tran_A', type=str, default='generator_data/trans_A_10.csv', help='tran_Atlantic')
+        self._parser.add_argument('--tran_G', type=str, default='generator_data/trans_G_10.csv', help='tran_Gulf')
 
         # Factor
         self._parser.add_argument('--P_p_factor', type=float, default=1, help='Production Factor')
