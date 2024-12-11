@@ -102,8 +102,6 @@ def main_generator(args):
     data_G = pd.read_csv(args.tran_G)
     matrix_tran_G = trans_output(data_G)
 
-    pdb.set_trace()
-
     Atlantic_month_dis = pd.read_excel(args.Atlantic_month_dis)
     Atlantic_month_dis = Atlantic_month_dis.to_numpy()[0]
 
@@ -188,9 +186,12 @@ def main_generator(args):
 
     # state range ------------------------------------------------------------------
 
-    rangeL = range(3)       # 0 ≤ X ≤ 2
-    rangeM = range(3, 6)    # 3 ≤ X ≤ 5
-    rangeH_cutoff = 6       # X ≥ 6 (complement of sum of P(X ≤ 5))
+    rangeL_A = range(3)       # 0 ≤ X ≤ 2
+    rangeM_A = range(3, 6)    # 3 ≤ X ≤ 5
+    rangeH_cutoff_A = 10       # X ≥ 6 (complement of sum of P(X ≤ 10))
+
+    rangeL_G = range(3)       # 0 ≤ X ≤ 2
+    rangeH_cutoff_G = 6       # X ≥ 3 (complement of sum of P(X ≤ 6))
 
     # Probability --------------------------------------------------------------
 
@@ -233,32 +234,34 @@ def main_generator(args):
 
     # MC Trans Matrix --------------------------------------------------------------
 
+    matrix_tran_A
+    matrix_tran_G
+
     MC_trans = []
     state_state_pro = []
-    for n in range(args.N):
-        if(states[n][0] == "H"):
-            pro_A_temp = prob_A_state[0]
-        elif(states[n][0] == "M"):
-            pro_A_temp = prob_A_state[1]
-        else:
-            pro_A_temp = prob_A_state[2]
+    for t in range(args.T)
+        for n in range(args.N):
+            if(states[n][0] == "H"):
+                pro_A_temp = prob_A_state[0]
+            elif(states[n][0] == "L"):
+                pro_A_temp = prob_A_state[1]
 
-        if(states[n][1] == "H"):
-            pro_G_temp = prob_G_state[0]
-        elif(states[n][1] == "M"):
-            pro_G_temp = prob_G_state[1]
-        else:
-            pro_G_temp = prob_G_state[2]
+            if(states[n][1] == "H"):
+                pro_G_temp = prob_G_state[0]
+            elif(states[n][1] == "M"):
+                pro_G_temp = prob_G_state[1]
+            else:
+                pro_G_temp = prob_G_state[2]
 
-        joint_prob  = pro_A_temp*pro_G_temp
-        state_state_pro.append(joint_prob)
+            joint_prob  = pro_A_temp*pro_G_temp
+            state_state_pro.append(joint_prob)
 
     for n in range(args.N):    
         MC_trans.append(state_state_pro)
 
     MC_trans_np = np.array(MC_trans)
 
-    # pdb.set_trace()
+    pdb.set_trace()
 
 
 
