@@ -55,6 +55,35 @@ def inverse_value_from_reg(predictions,lambda_value,min_,std,mean):
 
     return invers_values
 
+def trans_output(data):
+    year_mapping = {year: idx for idx, year in enumerate(sorted(data["Year"].unique()))}
+    data["Year"] = data["Year"].map(year_mapping)
+
+    # Get the unique years and categories for constructing transition matrices
+    years = data["Year"].unique()
+    categories = sorted(data["Category"].unique())
+    n_categories = len(categories)
+
+    # Build the transition matrix for each year
+    matrix_all = np.zeros((len(years),n_categories, n_categories))
+    for year in range(len(years)):
+        # Filter data for the current year
+        year_data = data[data["Year"] == year]
+        
+        # Initialize an empty matrix
+        matrix = np.zeros((n_categories, n_categories))
+        
+        # Populate the matrix using the transition probabilities
+        for _, row in year_data.iterrows():
+            i = categories.index(row["Category"])
+            j = categories.index(row["Next_Category"])
+            matrix[i, j] = row["Transition_Prob"]
+        
+        # Store the matrix in the dictionary
+        matrix_all[year] = matrix
+
+    return matrix_all
+
 
 def main_generator(args):
 
@@ -64,6 +93,16 @@ def main_generator(args):
     Frequency = Frequency.to_dict()
     lambda_A = Frequency["Atlantic"][0]
     lambda_G = Frequency["Gulf"][0]
+
+
+    # Altantic Transition Matrix
+
+    data_A = pd.read_csv(args.tran_A)
+    matrix_tran_A = trans_output(data_A)
+    data_G = pd.read_csv(args.tran_G)
+    matrix_tran_G = trans_output(data_G)
+
+    pdb.set_trace()
 
     Atlantic_month_dis = pd.read_excel(args.Atlantic_month_dis)
     Atlantic_month_dis = Atlantic_month_dis.to_numpy()[0]
@@ -138,7 +177,7 @@ def main_generator(args):
     # H: 5up
     ###
     states_A = ["H","M","L"]
-    states_G = ["H","M","L"]
+    states_G = ["H","L"]
     temp = []
 
     for n1 in states_A:
