@@ -171,7 +171,7 @@ class subproblem:
                 pi_8i[w][p] = self.MHSP_assu_cons[w][p].pi
                 temp = temp + self.MHSP_assu_cons[w][p].pi*v[w,p].x
 
-        if(abs(temp-self.sub.ObjVal) >= 1e-5):
+        if(abs(temp-self.sub.ObjVal) >= 1e-3):
             print("Subproblem problematic dual solution!")
             print("temp:",temp)
             print("obj:",self.sub.ObjVal)
@@ -218,7 +218,7 @@ class StageProblem:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
                                   + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
                                   + self.phi
-                                  + quicksum(self.idata.MC_tran_matrix[state][n]*self.theta[n] for n in range(args.N)) 
+                                  + quicksum(self.idata.MC_tran_matrix[self.stage][state][n]*self.theta[n] for n in range(args.N)) 
                                 , GRB.MINIMIZE);
         else:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
@@ -322,7 +322,7 @@ class StageProblem:
             if(self.last_stage == False):
                 temp_UB = sub_opt_total + sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W)) 
                 temp_UB = temp_UB + sum(self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
-                temp_UB = temp_UB + sum(self.idata.MC_tran_matrix[self.state][n]*self.theta[n].x for n in range(self.args.N))
+                temp_UB = temp_UB + sum(self.idata.MC_tran_matrix[self.stage][self.state][n]*self.theta[n].x for n in range(self.args.N))
             else:
                 temp_UB = sub_opt_total + sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W)) 
                 temp_UB = temp_UB + sum(self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
@@ -408,7 +408,7 @@ class StageProblem:
                 # print(self.stage,self.state,c)
 
 
-        if(abs(temp-self.model.ObjVal) >= 1e-5):
+        if(abs(temp-self.model.ObjVal) >= 1e-3):
             print("iteration:",iter,"stage:",self.stage,"problematic dual solution!")
             print("temp:",temp)
             print("obj:",self.model.ObjVal)
@@ -469,7 +469,7 @@ class solve_SDDP:
         state = self.initial_state
 
         for stage in range(args.T):
-            next_state = np.random.choice(args.N, 1, self.idata.MC_tran_matrix[state])
+            next_state = np.random.choice(args.N, 1, self.idata.MC_tran_matrix[stage][state])
             state = next_state[0]
             path.append(state)
 

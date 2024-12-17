@@ -174,8 +174,8 @@ def main_generator(args):
     # M: 3~5
     # H: 5up
     ###
-    states_A = ["H","M","L"]
-    states_G = ["H","L"]
+    states_A = ["H","L"]
+    states_G = ["H","M","L"]
     temp = []
 
     for n1 in states_A:
@@ -187,82 +187,86 @@ def main_generator(args):
     # state range ------------------------------------------------------------------
 
     rangeL_A = range(3)       # 0 ≤ X ≤ 2
-    rangeM_A = range(3, 6)    # 3 ≤ X ≤ 5
-    rangeH_cutoff_A = 10       # X ≥ 6 (complement of sum of P(X ≤ 10))
+    rangeH_cutoff_A =range(3, 7)     # X ≥ 3 (complement of sum of P(X ≤ 6))
+
 
     rangeL_G = range(3)       # 0 ≤ X ≤ 2
-    rangeH_cutoff_G = 6       # X ≥ 3 (complement of sum of P(X ≤ 6))
+    rangeM_G = range(3, 6)    # 3 ≤ X ≤ 5
+    rangeH_cutoff_G = range(6, 11)      # X ≥ 6 (complement of sum of P(X ≤ 10))
+
+    
+
 
     # Probability --------------------------------------------------------------
 
-    prob_A = []
-    prob_G = []
-    for i in range(rangeH_cutoff):
-        prob_A.append(poisson.pmf(i, lambda_A))
-        prob_G.append(poisson.pmf(i, lambda_G))
+    # prob_A = []
+    # prob_G = []
+    # for i in range(rangeH_cutoff):
+    #     prob_A.append(poisson.pmf(i, lambda_A))
+    #     prob_G.append(poisson.pmf(i, lambda_G))
 
-    prob_0_to_2_A = sum(prob_A[n] for n in rangeL)
-    prob_3_to_5_A = sum(prob_A[n] for n in rangeM)
-    prob_6_and_above_A = 1 - sum(prob_A[n] for n in range(rangeH_cutoff))
+    # prob_0_to_2_A = sum(prob_A[n] for n in rangeL)
+    # prob_3_to_5_A = sum(prob_A[n] for n in rangeM)
+    # prob_6_and_above_A = 1 - sum(prob_A[n] for n in range(rangeH_cutoff))
 
-    prob_0_to_2_G = sum(prob_G[n] for n in rangeL)
-    prob_3_to_5_G = sum(prob_G[n] for n in rangeM)
-    prob_6_and_above_G = 1 - sum(prob_G[n] for n in range(rangeH_cutoff))
+    # prob_0_to_2_G = sum(prob_G[n] for n in rangeL)
+    # prob_3_to_5_G = sum(prob_G[n] for n in rangeM)
+    # prob_6_and_above_G = 1 - sum(prob_G[n] for n in range(rangeH_cutoff))
 
-    prob_A_state = [prob_0_to_2_A, prob_3_to_5_A, prob_6_and_above_A]
-    prob_G_state = [prob_0_to_2_G, prob_3_to_5_G, prob_6_and_above_G]
+    # prob_A_state = [prob_0_to_2_A, prob_3_to_5_A, prob_6_and_above_A]
+    # prob_G_state = [prob_0_to_2_G, prob_3_to_5_G, prob_6_and_above_G]
 
-    # conditional --------------------------------------------------------------
+    # # conditional --------------------------------------------------------------
     
-    prob_0_to_2_A_cond = [prob_A[0],prob_A[1],prob_A[2]]
-    total_prob = sum(prob_0_to_2_A_cond)
-    prob_0_to_2_A_cond = prob_0_to_2_A_cond / total_prob
+    # Probabilities for A
+    prob_0_to_2_A_cond = np.array([76438, 19016, 3833]) / np.sum([76438, 19016, 3833])
+    prob_3_to_up_A_cond = np.array([610, 94, 7, 2]) / np.sum([610, 94, 7, 2])
 
-    prob_3_to_5_A_cond = [prob_A[3],prob_A[4],prob_A[5]]
-    total_prob = sum(prob_3_to_5_A_cond)
-    prob_3_to_5_A_cond = prob_3_to_5_A_cond / total_prob
+    # Probabilities for G
+    prob_0_to_2_G_cond = np.array([90112, 95085, 62782]) / np.sum([90112, 95085, 62782])
+    prob_3_to_5_G_cond = np.array([31560, 13343, 4812]) / np.sum([31560, 13343, 4812])
+    prob_6_to_up_G_cond = np.array([1600, 502, 153, 35, 16]) / np.sum([1600, 502, 153, 35, 16])
 
-    
-    prob_0_to_2_G_cond = [prob_G[0],prob_G[1],prob_G[2]]
-    total_prob = sum(prob_0_to_2_G_cond)
-    prob_0_to_2_G_cond = prob_0_to_2_G_cond / total_prob
 
-    prob_3_to_5_G_cond = [prob_G[3],prob_G[4],prob_G[5]]
-    total_prob = sum(prob_3_to_5_G_cond)
-    prob_3_to_5_G_cond = prob_3_to_5_G_cond / total_prob
 
 
     # MC Trans Matrix --------------------------------------------------------------
 
-    matrix_tran_A
-    matrix_tran_G
-
-    MC_trans = []
+    MC_trans = np.zeros((args.T,args.N,args.N))
     state_state_pro = []
-    for t in range(args.T)
+    for t in range(args.T):
         for n in range(args.N):
-            if(states[n][0] == "H"):
-                pro_A_temp = prob_A_state[0]
-            elif(states[n][0] == "L"):
-                pro_A_temp = prob_A_state[1]
+            for n_next in range(args.N): 
+                # print(t, states[n][0],states[n][1], "->", states[n_next][0],states[n_next][1])
+                
+                if(states[n][0] == "H"):
+                    n_A_temp = 1
+                else:
+                    n_A_temp = 0
 
-            if(states[n][1] == "H"):
-                pro_G_temp = prob_G_state[0]
-            elif(states[n][1] == "M"):
-                pro_G_temp = prob_G_state[1]
-            else:
-                pro_G_temp = prob_G_state[2]
+                if(states[n_next][0] == "H"):
+                    pro_A_temp = matrix_tran_A[t][n_A_temp][1]
+                elif(states[n_next][0] == "L"):
+                    pro_A_temp = matrix_tran_A[t][n_A_temp][0]
 
-            joint_prob  = pro_A_temp*pro_G_temp
-            state_state_pro.append(joint_prob)
+                if(states[n][1] == "H"):
+                    n_G_temp = 2
+                elif(states[n][1] == "M"):
+                    n_G_temp = 1
+                else:
+                    n_G_temp = 0
 
-    for n in range(args.N):    
-        MC_trans.append(state_state_pro)
+                if(states[n_next][1] == "H"):
+                    pro_G_temp = matrix_tran_G[t][n_G_temp][2]
+                elif(states[n_next][1] == "M"):
+                    pro_G_temp = matrix_tran_G[t][n_G_temp][1]
+                else:
+                    pro_G_temp = matrix_tran_G[t][n_G_temp][0]
 
-    MC_trans_np = np.array(MC_trans)
-
-    pdb.set_trace()
-
+                joint_prob  = pro_A_temp*pro_G_temp
+                # print(pro_A_temp,pro_G_temp,joint_prob)
+                MC_trans[t][n][n_next] = joint_prob
+    
 
 
     
@@ -272,140 +276,131 @@ def main_generator(args):
 
     args.J = len(pd.merge(Data_Atlantic_df, Data_Gulf_df, on='county_full', how='outer'))
 
-    demand = np.zeros((args.T,args.N,args.K,args.M+1,args.J,args.G))
-    demand_root = np.zeros((args.K,args.M+1,args.J,args.G))
+    demand = np.zeros((args.N,args.K,args.M+1,args.J,args.G))
 
-    for t in range(args.T+1):
-        for n_index,n in enumerate(states):
-            for k in range(args.K):
+    for n_index,n in enumerate(states):
+        for k in range(args.K):
 
-                # Sample # of hurricane
-                # Atlantic
-                if(n[0] == "H"):
-                    freq_sample_path_A = np.random.choice(rangeL, size=1, p=prob_0_to_2_A_cond)[0]
-                elif(n[0]  == "M"):
-                    freq_sample_path_A = np.random.choice(rangeM, size=1, p=prob_3_to_5_A_cond)[0]
-                else:
-                    freq_sample_path_A = 0
-                    while freq_sample_path_A <= 5:
-                        freq_sample_path_A = np.random.poisson(lambda_A)
+            # Sample # of hurricane
+            # Atlantic
+            if(n[0] == "L"):
+                freq_sample_path_A = np.random.choice(rangeL_A, size=1, p=prob_0_to_2_A_cond)[0]
+            else:
+                freq_sample_path_A = np.random.choice(rangeH_cutoff_A, size=1, p=prob_3_to_up_A_cond)[0]
 
-                # Gulf
-                if(n[1] == "H"):
-                    freq_sample_path_G = np.random.choice(rangeL, size=1, p=prob_0_to_2_G_cond)[0]
-                elif(n[1]  == "M"):
-                    freq_sample_path_G = np.random.choice(rangeM, size=1, p=prob_3_to_5_G_cond)[0]
-                else:
-                    freq_sample_path_G = 0
-                    while freq_sample_path_G <= 5:
-                        freq_sample_path_G = np.random.poisson(lambda_G)
+            # Gulf
+            if(n[1] == "L"):
+                freq_sample_path_G = np.random.choice(rangeL_G, size=1, p=prob_0_to_2_G_cond)[0]
+            elif(n[1]  == "M"):
+                freq_sample_path_G = np.random.choice(rangeM_G, size=1, p=prob_3_to_5_G_cond)[0]
+            else:
+                freq_sample_path_G = np.random.choice(rangeH_cutoff_G, size=1, p=prob_6_to_up_G_cond)[0]
 
-                
-                # Distribute into month
-                A_month_freq = distribute_hurricane_month(freq_sample_path_A, Atlantic_month_dis)
-                G_month_freq = distribute_hurricane_month(freq_sample_path_G, Gulf_month_dis)
+            
+            # Distribute into month
+            A_month_freq = distribute_hurricane_month(freq_sample_path_A, Atlantic_month_dis)
+            G_month_freq = distribute_hurricane_month(freq_sample_path_G, Gulf_month_dis)
 
-                # print(freq_sample_path_A,freq_sample_path_G)
+            # print(freq_sample_path_A,freq_sample_path_G)
 
 
-                for m in range(args.M+1):
+            for m in range(args.M+1):
 
-                    total_demand_in_month_A = np.zeros((2,len(Data_Atlantic_df)))
-                    total_demand_in_month_G = np.zeros((2,len(Data_Gulf_df)))
+                total_demand_in_month_A = np.zeros((2,len(Data_Atlantic_df)))
+                total_demand_in_month_G = np.zeros((2,len(Data_Gulf_df)))
 
-                    if(m != 0):
+                if(m != 0):
 
-                        A_num_hurricane = A_month_freq[m-1]
-                        G_num_hurricane = G_month_freq[m-1]
+                    A_num_hurricane = A_month_freq[m-1]
+                    G_num_hurricane = G_month_freq[m-1]
 
-                        for h in range(A_num_hurricane):
+                    for h in range(A_num_hurricane):
 
-                            # Calculate distance from landfall (node1)
-                            Landfall = kde_Atlantic.resample(1)
-                            disatnce_A = []
-                            for index, row in coord_A.iterrows():
-                                distance = haversine(Landfall[0][0],Landfall[1][0],row['lng'],row['lat'])
-                                disatnce_A.append(distance)
+                        # Calculate distance from landfall (node1)
+                        Landfall = kde_Atlantic.resample(1)
+                        disatnce_A = []
+                        for index, row in coord_A.iterrows():
+                            distance = haversine(Landfall[0][0],Landfall[1][0],row['lng'],row['lat'])
+                            disatnce_A.append(distance)
 
-                            Data_Atlantic_df['node1'] = disatnce_A
+                        Data_Atlantic_df['node1'] = disatnce_A
 
-                            # SS sample
-                            SS = np.random.choice([1,2,3,4,5], size=1, p=Atlantic_SS_dis)[0]
-                            Data_Atlantic_df['SS_scale'] = SS
+                        # SS sample
+                        SS = np.random.choice([1,2,3,4,5], size=1, p=Atlantic_SS_dis)[0]
+                        Data_Atlantic_df['SS_scale'] = SS
 
-                            
-                            # Generate Demand
-                            X_A = Data_Atlantic_df[['node1','SS_scale','population','SVI']]
+                        
+                        # Generate Demand
+                        X_A = Data_Atlantic_df[['node1','SS_scale','population','SVI']]
 
-                            type1_demand = inverse_value_from_reg(reg1.predict(X_A),lambda_value1,min_y1,y_1.std(),y_1.mean())
-                            type2_demand = inverse_value_from_reg(reg2.predict(X_A),lambda_value2,min_y2,y_2.std(),y_2.mean())
+                        type1_demand = inverse_value_from_reg(reg1.predict(X_A),lambda_value1,min_y1,y_1.std(),y_1.mean())
+                        type2_demand = inverse_value_from_reg(reg2.predict(X_A),lambda_value2,min_y2,y_2.std(),y_2.mean())
 
-                            ## thredhold < 10 demand then 0 demand
-                            type1_demand = [0 if value <= 10 else value for value in type1_demand]
-                            type2_demand = [0 if value <= 10 else value for value in type2_demand]
+                        ## thredhold < 10 demand then 0 demand
+                        type1_demand = [0 if value <= 10 else value for value in type1_demand]
+                        type2_demand = [0 if value <= 10 else value for value in type2_demand]
 
-                            total_demand_in_month_A[0] = total_demand_in_month_A[0] + type1_demand
-                            total_demand_in_month_A[1] = total_demand_in_month_A[1] + type2_demand
+                        total_demand_in_month_A[0] = total_demand_in_month_A[0] + type1_demand
+                        total_demand_in_month_A[1] = total_demand_in_month_A[1] + type2_demand
 
 
 
-                        for h in range(G_num_hurricane):
+                    for h in range(G_num_hurricane):
 
-                            # Calculate distance from landfall (node1)
-                            Landfall = kde_Gulf.resample(1)
-                            disatnce_G = []
-                            for index, row in coord_G.iterrows():
-                                distance = haversine(Landfall[0][0],Landfall[1][0],row['lng'],row['lat'])
-                                disatnce_G.append(distance)
+                        # Calculate distance from landfall (node1)
+                        Landfall = kde_Gulf.resample(1)
+                        disatnce_G = []
+                        for index, row in coord_G.iterrows():
+                            distance = haversine(Landfall[0][0],Landfall[1][0],row['lng'],row['lat'])
+                            disatnce_G.append(distance)
 
-                            Data_Gulf_df['node1'] = disatnce_G
+                        Data_Gulf_df['node1'] = disatnce_G
 
-                            # SS sample
-                            SS = np.random.choice([1,2,3,4,5], size=1, p=Gulf_SS_dis)[0]
-                            Data_Gulf_df['SS_scale'] = SS
+                        # SS sample
+                        SS = np.random.choice([1,2,3,4,5], size=1, p=Gulf_SS_dis)[0]
+                        Data_Gulf_df['SS_scale'] = SS
 
-                            # Generate Demand
+                        # Generate Demand
 
-                            X_G = Data_Gulf_df[['node1','SS_scale','population','SVI']]  
+                        X_G = Data_Gulf_df[['node1','SS_scale','population','SVI']]  
 
-                            type1_demand = inverse_value_from_reg(reg1.predict(X_G),lambda_value1,min_y1,y_1.std(),y_1.mean())
-                            type2_demand = inverse_value_from_reg(reg2.predict(X_G),lambda_value2,min_y2,y_2.std(),y_2.mean())
-                            
-                            ## thredhold < 10 demand then 0 demand
-                            type1_demand = [0 if value <= 10 else value for value in type1_demand]
-                            type2_demand = [0 if value <= 10 else value for value in type2_demand]
+                        type1_demand = inverse_value_from_reg(reg1.predict(X_G),lambda_value1,min_y1,y_1.std(),y_1.mean())
+                        type2_demand = inverse_value_from_reg(reg2.predict(X_G),lambda_value2,min_y2,y_2.std(),y_2.mean())
+                        
+                        ## thredhold < 10 demand then 0 demand
+                        type1_demand = [0 if value <= 10 else value for value in type1_demand]
+                        type2_demand = [0 if value <= 10 else value for value in type2_demand]
 
-                            total_demand_in_month_G[0] = total_demand_in_month_G[0] + type1_demand
-                            total_demand_in_month_G[1] = total_demand_in_month_G[1] + type2_demand
+                        total_demand_in_month_G[0] = total_demand_in_month_G[0] + type1_demand
+                        total_demand_in_month_G[1] = total_demand_in_month_G[1] + type2_demand
 
 
-                    # Combine the FL data
+                # Combine the FL data
 
-                    study_region_demand_A = pd.DataFrame(columns=['county', 'type1', 'type2'])
-                    study_region_demand_G = pd.DataFrame(columns=['county', 'type1', 'type2'])
-                    study_region_demand = pd.DataFrame(columns=['county', 'type1', 'type2'])
+                study_region_demand_A = pd.DataFrame(columns=['county', 'type1', 'type2'])
+                study_region_demand_G = pd.DataFrame(columns=['county', 'type1', 'type2'])
+                study_region_demand = pd.DataFrame(columns=['county', 'type1', 'type2'])
 
-                    study_region_demand_A['county'] = Data_Atlantic_df['county_full']
-                    study_region_demand_A['type1'] = total_demand_in_month_A[0]
-                    study_region_demand_A['type2'] = total_demand_in_month_A[1]
+                study_region_demand_A['county'] = Data_Atlantic_df['county_full']
+                study_region_demand_A['type1'] = total_demand_in_month_A[0]
+                study_region_demand_A['type2'] = total_demand_in_month_A[1]
 
-                    study_region_demand_G['county'] = Data_Gulf_df['county_full']
-                    study_region_demand_G['type1'] = total_demand_in_month_G[0]
-                    study_region_demand_G['type2'] = total_demand_in_month_G[1]
+                study_region_demand_G['county'] = Data_Gulf_df['county_full']
+                study_region_demand_G['type1'] = total_demand_in_month_G[0]
+                study_region_demand_G['type2'] = total_demand_in_month_G[1]
 
-                    study_region_demand = pd.merge(study_region_demand_A, study_region_demand_G, on='county', how='outer', suffixes=('_df1', '_df2'))
+                study_region_demand = pd.merge(study_region_demand_A, study_region_demand_G, on='county', how='outer', suffixes=('_df1', '_df2'))
 
-                    study_region_demand['type1'] = study_region_demand['type1_df1'].fillna(0) + study_region_demand['type1_df2'].fillna(0)
-                    study_region_demand['type2'] = study_region_demand['type2_df2'].fillna(0) + study_region_demand['type2_df2'].fillna(0)
+                study_region_demand['type1'] = study_region_demand['type1_df1'].fillna(0) + study_region_demand['type1_df2'].fillna(0)
+                study_region_demand['type2'] = study_region_demand['type2_df2'].fillna(0) + study_region_demand['type2_df2'].fillna(0)
 
-                    study_region_demand.drop(columns=['type1_df1', 'type1_df2', 'type2_df2', 'type2_df2'], inplace=True)
+                study_region_demand.drop(columns=['type1_df1', 'type1_df2', 'type2_df2', 'type2_df2'], inplace=True)
 
-                    study_region_demand_np = study_region_demand[['type1','type2']].to_numpy()
+                study_region_demand_np = study_region_demand[['type1','type2']].to_numpy()
 
-                    if(t == args.T):
-                        demand_root[k][m] = study_region_demand_np
-                    else:
-                        demand[t][n_index][k][m] = study_region_demand_np
+
+                demand[n_index][k][m] = study_region_demand_np
+
 
     states_len = len(states)
     for n1 in range(states_len):
@@ -413,23 +408,51 @@ def main_generator(args):
             demand1 = []
             demand2 = []
             for k in range(args.K):
-                demand1.append(sum(demand[0][n1][k][m][j][g] for j in range(args.J) for m in range(args.M+1) for g in range(args.G)))
-                demand2.append(sum(demand[0][n2][k][m][j][g] for j in range(args.J) for m in range(args.M+1) for g in range(args.G)))
+                demand1.append(sum(demand[n1][k][m][j][g] for j in range(args.J) for m in range(args.M+1) for g in range(args.G)))
+                demand2.append(sum(demand[n2][k][m][j][g] for j in range(args.J) for m in range(args.M+1) for g in range(args.G)))
             # print(n1,n2, demand1, demand2)
             statistic, p_value = stats.ks_2samp(demand1, demand2)
             print(n1,n2)
             print(f"KS Statistic: {statistic}")
             print(f"P-value: {p_value}")
 
-    demand1 = demand[t][n_index]
+    # pdb.set_trace()
 
-    filename = "demand_data/Demand_Stage_" + str(args.T) + "_States_" + str(args.N) + "_Study_" + str(args.J) + "_month_" + str(args.M) + "_K_" + str(args.K)
-    filename_root = "demand_data/Root_Demand_Stage_" + str(args.T) + "_States_" + str(args.N) + "_Study_" + str(args.J) + "_month_" + str(args.M) + "_K_" + str(args.K)
-    filename_mc= "demand_data/MC_trans_Stage_" + str(args.T) + "_States_" + str(args.N) + "_Study_" + str(args.J) + "_month_" + str(args.M) + "_K_" + str(args.K)
+    # demand1 = demand[t][n_index]
+
+   
+    # Get indices of all elements in the array
+    indices = np.array(np.meshgrid(
+        np.arange(args.N),
+        np.arange(args.K),
+        np.arange(args.M+1),
+        np.arange(args.J),
+        np.arange(args.G),
+        indexing='ij'
+    )).reshape(5, -1).T
+
+    # Flatten the data array
+    values = demand.flatten()
+    # Combine indices and values
+    result = np.column_stack((indices, values))
+    # Save to CSV
+    filename = "demand_data/Demand_Stage_" + str(args.T) + "_States_" + str(args.N) + "_Study_" + str(args.J) + "_month_" + str(args.M) + "_K_" + str(args.K) + ".csv"
+    np.savetxt(filename, result, delimiter=",", header="State,Scenario,Month,Sutdy_Region,Group,Demand", comments="", fmt="%.6f")
+
     
-    np.save(f'{filename_mc}.npy', MC_trans_np)
-    np.save(f'{filename}.npy', demand)
-    np.save(f'{filename_root}.npy', demand_root)
+    indices = np.array(np.meshgrid(
+        np.arange(args.T),
+        np.arange(args.N),
+        np.arange(args.N),
+        indexing='ij'
+    )).reshape(3, -1).T
+
+    values = MC_trans.flatten()
+    # Save to CSV
+    result = np.column_stack((indices, values))
+    filename_mc= "demand_data/MC_trans_Stage_" + str(args.T) + "_States_" + str(args.N) + ".csv"
+    np.savetxt(filename_mc, result, delimiter=",", header="Stage,state,state_next", comments="", fmt="%.6f")
+
 
 
 if __name__ == '__main__':

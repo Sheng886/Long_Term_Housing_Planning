@@ -49,7 +49,7 @@ class baseline_class():
         for n in range(args.TN):
             for w in range(args.W):
                 if n == 0:
-                    self.model.addConstr(self.u[n,w] == self.y[n,w])
+                    self.model.addConstr(self.u[n,w] == + self.idata.Cap_w[w] + self.y[n,w])
                 else:
                     parent_node = self.tree[n].parent
                     self.model.addConstr(self.u[n,w] == self.u[parent_node,w] + self.y[n,w])
@@ -153,10 +153,10 @@ class baseline_class():
         total_costs = []
 
 
-        for n in range(args.TN):
-            print(f"node {n}:")
+        # for n in range(args.TN):
+        #     print(f"node {n}:")
 
-            print("u:", sum(self.u[n,w].x for w in range(self.args.W)))
-            print("v:", sum(self.v[n,w,p].x for w in range(self.args.W) for p in range(self.args.P)))
-
+        #     print("u:", sum(self.u[n,w].x for w in range(self.args.W)))
+        #     print("v:", sum(self.v[n,w,p].x for w in range(self.args.W) for p in range(self.args.P)))
+        #     3.209270109e+10
 

@@ -7,6 +7,7 @@ from gurobipy import GRB
 from gurobipy import quicksum
 import time
 import pdb
+import sys
 
 
 
@@ -179,7 +180,7 @@ class subproblem:
                 pi_8i[w][p] = self.MHSP_assu_cons[w][p].pi
                 temp = temp + self.MHSP_assu_cons[w][p].pi*v[w,p].x
 
-        if(abs(temp-self.sub.ObjVal) >= 1e-5):
+        if(abs(temp-self.sub.ObjVal) >= 1e-3):
             print("Subproblem problematic dual solution!")
             print("temp:",temp)
             print("obj:",self.sub.ObjVal)
@@ -206,7 +207,7 @@ class StageProblem_Decomposition:
         self.args = args
         self.idata = input_data
         
-        self.sub = subproblem(args,input_data)
+        self.sub = subproblem(args,self.idata)
 
         self.state = state
         self.stage = stage
@@ -243,7 +244,7 @@ class StageProblem_Decomposition:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
                                   + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
                                   + self.phi
-                                  + quicksum(self.idata.MC_tran_matrix[state][n]*self.theta[n] for n in range(args.N)) 
+                                  + quicksum(self.idata.MC_tran_matrix[self.stage][state][n]*self.theta[n] for n in range(args.N)) 
                                 , GRB.MINIMIZE);
         else:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
@@ -324,7 +325,7 @@ class StageProblem_Decomposition:
         # ---------------------------------------- Benders Decompoistion on Strategic Node  -----------------------------------------
 
         LB = 0
-        UB = 1e10
+        UB = 9223372036854775807
         eps = 1e-3
 
 
@@ -345,6 +346,7 @@ class StageProblem_Decomposition:
 
             LB = self.model.ObjVal
 
+
             pi_8b = np.zeros((self.args.K, self.args.W, self.args.P))
             pi_8e = np.zeros((self.args.K, self.args.M+1, self.args.I))
             pi_8g = np.zeros((self.args.K, self.args.M+1, self.args.W))
@@ -356,24 +358,26 @@ class StageProblem_Decomposition:
 
             for k in range(self.args.K):
                 if(self.stage0 == False):
-                    pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k],temp1,temp2,temp3 = self.sub.run(self.u,self.v,self.idata.demand[self.stage][self.state][k])
+                    pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k],temp1,temp2,temp3 = self.sub.run(self.u,self.v,self.idata.demand[self.state][k])
                 else:
-                    pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k],temp1,temp2,temp3 = self.sub.run(self.u,self.v,self.idata.demand_root[k])
+                    pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k],temp1,temp2,temp3 = self.sub.run(self.u,self.v,self.idata.demand[self.args.initial_state][k])
                 sub_opt_total = sub_opt_total + sub_opt
 
             sub_opt_total = (1/self.args.K)*sum(sub_opt[k] for k in range(self.args.K))
 
             # ---------------------------------------- UB,LB Check  -----------------------------------------
 
-            temp_UB = 0
+            temp_UB = self.model.ObjVal - self.phi.x + sub_opt_total
 
-            if(self.last_stage == False):
-                temp_UB = sub_opt_total + sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W)) 
-                temp_UB = temp_UB + sum(self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
-                temp_UB = temp_UB + sum(self.idata.MC_tran_matrix[self.state][n]*self.theta[n].x for n in range(self.args.N))
-            else:
-                temp_UB = sub_opt_total + sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W)) 
-                temp_UB = temp_UB + sum(self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
+            # if(self.last_stage == False):
+            #     temp_UB = sub_opt_total + sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W)) 
+            #     temp_UB = temp_UB + sum(self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
+            #     temp_UB = temp_UB + sum(self.idata.MC_tran_matrix[self.stage][self.state][n]*self.theta[n].x for n in range(self.args.N))
+            # else:
+            #     temp_UB = sub_opt_total + sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W)) 
+            #     temp_UB = temp_UB + sum(self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
+
+            
 
             UB = min(UB,temp_UB)
             # print("LB/UB:",LB,UB)
@@ -394,11 +398,11 @@ class StageProblem_Decomposition:
                     temp_constraint = self.model.addConstr(self.phi >= (1/self.args.K)*quicksum(quicksum(self.v[w,p]*pi_8b[k][w][p] for w in range(self.args.W) for p in range(self.args.P))
                                                                                       +quicksum(self.idata.B_i[i]*pi_8e[k][m][i] for m in range(self.args.M+1) for i in range(self.args.I))
                                                                                       +quicksum(pi_8g[k][m][w]*self.u[w] for m in range(self.args.M+1) for w in range(self.args.W))
-                                                                                      +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.stage][self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
+                                                                                      +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                                       +quicksum(pi_8i[k][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
                                                                                       for k in range(self.args.K)))
 
-                    temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.stage][self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
+                    temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
                     temp_rhs = temp_rhs + (1/self.args.K)*sum(self.idata.B_i[i]*pi_8e[k][m][i] for m in range(self.args.M+1) for i in range(self.args.I) for k in range(self.args.K))
 
                     self.cut.append(temp_constraint)
@@ -408,11 +412,11 @@ class StageProblem_Decomposition:
                     temp_constraint = self.model.addConstr(self.phi >= (1/self.args.K)*quicksum(quicksum(self.v[w,p]*pi_8b[k][w][p] for w in range(self.args.W) for p in range(self.args.P))
                                                                                       +quicksum(self.idata.B_i[i]*pi_8e[k][m][i] for m in range(self.args.M+1) for i in range(self.args.I))
                                                                                       +quicksum(pi_8g[k][m][w]*self.u[w] for m in range(self.args.M+1) for w in range(self.args.W))
-                                                                                      +quicksum(pi_8h[k][m][j][g]*self.idata.demand_root[k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
+                                                                                      +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.args.initial_state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                                       +quicksum(pi_8i[k][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
                                                                                       for k in range(self.args.K)))
 
-                    temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand_root[k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
+                    temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.args.initial_state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
                     temp_rhs = temp_rhs + (1/self.args.K)*sum(self.idata.B_i[i]*pi_8e[k][m][i] for m in range(self.args.M+1) for i in range(self.args.I) for k in range(self.args.K))
                
                     self.cut.append(temp_constraint)
@@ -523,11 +527,11 @@ class StageProblem_Decomposition:
             temp_constraint = self.model.addConstr(self.phi >= (1/self.args.K)*quicksum(quicksum(self.v[w,p]*pi_8b[k][w][p] for w in range(self.args.W) for p in range(self.args.P))
                                                                               +quicksum(self.idata.B_i[i]*pi_8e[k][m][i] for m in range(self.args.M+1) for i in range(self.args.I))
                                                                               +quicksum(pi_8g[k][m][w]*self.u[w] for m in range(self.args.M+1) for w in range(self.args.W))
-                                                                              +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.stage][self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
+                                                                              +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                               +quicksum(pi_8i[k][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
                                                                               for k in range(self.args.K)))
 
-            temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.stage][self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
+            temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
             temp_rhs = temp_rhs + (1/self.args.K)*sum(self.idata.B_i[i]*pi_8e[k][m][i] for m in range(self.args.M+1) for i in range(self.args.I) for k in range(self.args.K))
 
             self.cut.append(temp_constraint)
@@ -537,11 +541,11 @@ class StageProblem_Decomposition:
             temp_constraint = self.model.addConstr(self.phi >= (1/self.args.K)*quicksum(quicksum(self.v[w,p]*pi_8b[k][w][p] for w in range(self.args.W) for p in range(self.args.P))
                                                                               +quicksum(self.idata.B_i[i]*pi_8e[k][m][i] for m in range(self.args.M+1) for i in range(self.args.I))
                                                                               +quicksum(pi_8g[k][m][w]*self.u[w] for m in range(self.args.M+1) for w in range(self.args.W))
-                                                                              +quicksum(pi_8h[k][m][j][g]*self.idata.demand_root[k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
+                                                                              +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.args.initial_state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                               +quicksum(pi_8i[k][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
                                                                               for k in range(self.args.K)))
 
-            temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand_root[k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
+            temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.args.initial_state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
             temp_rhs = temp_rhs + (1/self.args.K)*sum(self.idata.B_i[i]*pi_8e[k][m][i] for m in range(self.args.M+1) for i in range(self.args.I) for k in range(self.args.K))
        
             self.cut.append(temp_constraint)
@@ -600,7 +604,7 @@ class StageProblem_extended:
                                   + (1/args.K)*quicksum(quicksum(self.idata.O_p[p]*self.aak[k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
                                                       + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                                                 + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)) for k in range(args.K))
-                                  + quicksum(self.idata.MC_tran_matrix[state][n]*self.theta[n] for n in range(args.N)) 
+                                  + quicksum(self.idata.MC_tran_matrix[self.stage][state][n]*self.theta[n] for n in range(args.N)) 
                                 , GRB.MINIMIZE);
         else:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
@@ -709,9 +713,9 @@ class StageProblem_extended:
                 for j in range(args.J):
                     for g in range(args.G):
                         if(stage0 == False):
-                            self.k_demand[k][m][j][g] = self.model.addConstr(quicksum(self.fk[k,m,w,j,p,g] for w in range(args.W) for p in range(args.P)) + self.sk[k,m,j,g] == self.idata.demand[stage][state][k][m][j][g])
+                            self.k_demand[k][m][j][g] = self.model.addConstr(quicksum(self.fk[k,m,w,j,p,g] for w in range(args.W) for p in range(args.P)) + self.sk[k,m,j,g] == self.idata.demand[state][k][m][j][g])
                         else:
-                            self.k_demand[k][m][j][g] = self.model.addConstr(quicksum(self.fk[k,m,w,j,p,g] for w in range(args.W) for p in range(args.P)) + self.sk[k,m,j,g] == self.idata.demand_root[k][m][j][g])
+                            self.k_demand[k][m][j][g] = self.model.addConstr(quicksum(self.fk[k,m,w,j,p,g] for w in range(args.W) for p in range(args.P)) + self.sk[k,m,j,g] == self.idata.demand[self.args.initial_state][k][m][j][g])
 
 
         # Assumption Replensih by MHS
@@ -830,9 +834,9 @@ class StageProblem_extended:
                     for g in range(self.args.G):
                         pi_h[k][m][j][g] = self.k_demand[k][m][j][g].pi
                         if(self.stage0 == False):
-                            temp = temp + self.k_demand[k][m][j][g].pi*self.idata.demand[self.stage][self.state][k][m][j][g]
+                            temp = temp + self.k_demand[k][m][j][g].pi*self.idata.demand[self.state][k][m][j][g]
                         else:
-                            temp = temp + self.k_demand[k][m][j][g].pi*self.idata.demand_root[k][m][j][g]
+                            temp = temp + self.k_demand[k][m][j][g].pi*self.idata.demand[self.args.initial_state][k][m][j][g]
 
         
         cut_pi = 0
@@ -864,11 +868,11 @@ class StageProblem_extended:
                 temp_constraint = self.model.addConstr(self.theta[state_next] >= quicksum(pi_b[w]*self.u[w] for w in range(self.args.W)) 
                                                                                 + quicksum(pi_c[w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
                                                                                 + quicksum(pi_e[k][m][i]*self.idata.B_i[i] for k in range(self.args.K) for m in range(self.args.M+1) for i in range(self.args.I))
-                                                                                + quicksum(pi_h[k][m][j][g]*self.idata.demand[stage_next][state_next][k][m][j][g] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
+                                                                                + quicksum(pi_h[k][m][j][g]*self.idata.demand[state_next][k][m][j][g] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                                 + cut_pi)
                 
                 temp_rhs = sum(pi_e[k][m][i]*self.idata.B_i[i] for k in range(self.args.K) for m in range(self.args.M+1) for i in range(self.args.I)) 
-                temp_rhs = temp_rhs + sum(pi_h[k][m][j][g]*self.idata.demand[stage_next][state_next][k][m][j][g] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
+                temp_rhs = temp_rhs + sum(pi_h[k][m][j][g]*self.idata.demand[state_next][k][m][j][g] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                 temp_rhs = temp_rhs + cut_pi
 
                 self.cut_temp.append(temp_constraint)
@@ -880,11 +884,11 @@ class StageProblem_extended:
             temp_constraint = self.model.addConstr(self.theta[state_next] >= quicksum(pi_b[w]*self.u[w] for w in range(self.args.W)) 
                                                                 + quicksum(pi_c[w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
                                                                 + quicksum(pi_e[k][m][i]*self.idata.B_i[i] for k in range(self.args.K) for m in range(self.args.M+1) for i in range(self.args.I))
-                                                                + quicksum(pi_h[k][m][j][g]*self.idata.demand[stage_next][state_next][k][m][j][g] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
+                                                                + quicksum(pi_h[k][m][j][g]*self.idata.demand[state_next][k][m][j][g] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                 + cut_pi)
                 
             temp_rhs = sum(pi_e[k][m][i]*self.idata.B_i[i] for k in range(self.args.K) for m in range(self.args.M+1) for i in range(self.args.I))
-            temp_rhs = temp_rhs + sum(pi_h[k][m][j][g]*self.idata.demand[stage_next][state_next][k][m][j][g] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
+            temp_rhs = temp_rhs + sum(pi_h[k][m][j][g]*self.idata.demand[state_next][k][m][j][g] for k in range(self.args.K) for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
             temp_rhs = temp_rhs + cut_pi
             
             self.cut_temp.append(temp_constraint)
@@ -899,6 +903,7 @@ class solve_SDDP:
         self.args = args
         self.idata = input_data
 
+        start_time = time.time()
         if(args.Strategic_node_sovling == 0):
             self.stage_root = StageProblem_extended(args,input_data,args.initial_state,0,stage0=True)
             self.stage = [[StageProblem_extended(args,input_data,n,t,stage0=False) for n in range(args.N)] for t in range(args.T-1)] 
@@ -907,6 +912,10 @@ class solve_SDDP:
             self.stage_root = StageProblem_Decomposition(args,input_data,args.initial_state,0,stage0=True)
             self.stage = [[StageProblem_Decomposition(args,input_data,n,t,stage0=False) for n in range(args.N)] for t in range(args.T-1)] 
             self.stage_leaf = [StageProblem_Decomposition(args,input_data,n,args.T-1,last_stage=True) for n in range(args.N)];
+        end_time = time.time()
+        time_taken = end_time - start_time
+        print("ScenarioTree generated.",time_taken,"secs.")
+        print("Memory Used.",sys.getsizeof(self.stage) + sys.getsizeof(self.stage_root) + sys.getsizeof(self.stage_leaf))
 
     def sample_path(self, args):
 
@@ -916,7 +925,7 @@ class solve_SDDP:
         state = self.initial_state
 
         for stage in range(args.T):
-            next_state = np.random.choice(args.N, 1, self.idata.MC_tran_matrix[state].tolist)
+            next_state = np.random.choice(args.N, 1, self.idata.MC_tran_matrix[stage][state].tolist)
             state = next_state[0]
             path.append(state)
 
@@ -1001,11 +1010,18 @@ class solve_SDDP:
             elif(self.args.Strategic_node_sovling == 1):
                 u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,temp1,temp2,temp3 = self.stage_root.forward_run()
 
+                # print("1111")
+
                 # Benders Cut Sharing
                 self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,root=True)
 
+                # print("22222")
+
             
             for stage in range(self.args.T-1):
+
+                # print("33333")
+
                 if(self.args.Strategic_node_sovling == 0):
                     u,v,obj_ex,temp1,temp2,temp3,temp4,temp5,temp6 = self.stage[stage][sample_path[stage]].forward_run(u,v)
                 elif(self.args.Strategic_node_sovling == 1):
@@ -1021,6 +1037,8 @@ class solve_SDDP:
                 
                 # Benders Cut Sharing
                 self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,leaf=True,state=sample_path[self.args.T-1])
+
+            # print("------------------------------------")
 
             
 
@@ -1053,6 +1071,11 @@ class solve_SDDP:
                 cut_iter_temp = self.stage_root.add_cut(LB,0,0,sample_path[0],pi_b,pi_c,Benders_cut_pi)
 
             cutviol_iter = cutviol_iter + cut_iter_temp
+
+
+            # print("**************************************")
+
+
             # if(self.args.Strategic_node_sovling == 0):
             #     pi_b,pi_c,pi_e,pi_h,cut_pi,LB =  self.stage_root.backward_run()
             # elif(self.args.Strategic_node_sovling == 1):
@@ -1109,7 +1132,7 @@ class solve_SDDP:
                     elif(self.args.Strategic_node_sovling == 1):
                         u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,staging_area_expand_cost_temp,inventory_expand_cost_temp,holdings_cost_temp = self.stage_root.forward_run()
                         for k in range(self.args.K):
-                            pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage_root.sub.run(u,v,self.idata.demand_root[k])
+                            pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage_root.sub.run(u,v,self.idata.demand[self.args.initial_state][k])
 
                     solution_u[0][self.args.initial_state] += sum(u[w].x for w in range(self.args.W))
                     solution_v[0][self.args.initial_state] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
@@ -1129,7 +1152,7 @@ class solve_SDDP:
                         elif(self.args.Strategic_node_sovling == 1):
                             u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,staging_area_expand_cost_temp,inventory_expand_cost_temp,holdings_cost_temp = self.stage[stage][sample_path[stage]].forward_run(u,v)
                             for k in range(self.args.K):
-                                pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage[stage][sample_path[stage]].sub.run(u,v,self.idata.demand[stage][sample_path[stage]][k])
+                                pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage[stage][sample_path[stage]].sub.run(u,v,self.idata.demand[sample_path[stage]][k])
                         
                         solution_u[stage+1][sample_path[stage]] += sum(u[w].x for w in range(self.args.W))
                         solution_v[stage+1][sample_path[stage]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
@@ -1147,7 +1170,7 @@ class solve_SDDP:
                     elif(self.args.Strategic_node_sovling == 1):
                         u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,staging_area_expand_cost_temp,inventory_expand_cost_temp,holdings_cost_temp = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
                         for k in range(self.args.K):
-                                pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage_leaf[sample_path[self.args.T-1]].sub.run(u,v,self.idata.demand[stage][sample_path[stage]][k])
+                                pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage_leaf[sample_path[self.args.T-1]].sub.run(u,v,self.idata.demand[sample_path[stage]][k])
                         
                     solution_u[self.args.T][sample_path[self.args.T-1]] += sum(u[w].x for w in range(self.args.W))
                     solution_v[self.args.T][sample_path[self.args.T-1]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
@@ -1173,7 +1196,7 @@ class solve_SDDP:
                 
                 
                 df = pd.DataFrame(solution, columns=[ 'stage','state','Staging Area Capacity','Inventory Level','obj','staging_area_expand_cost','inventory_expand_cost','replenmship_cost','Shortage_cost','acquire_cost','holding_cost'])
-                filename = "result_Stage_" + str(self.args.T) + "_States_" + str(self.args.N) + "_Study_" + str(self.args.J) + "_month_" + str(self.args.M)  + "_K_" + str(self.args.K)  + "_Pp_" + str(self.args.P_p_factor) + "_Cu_" + str(self.args.C_u_factor) + "_Op_" +  str(self.args.O_p_factor) + "_Hp_" +  str(self.args.H_p_factor)  + "_policy_" +  str(self.args.Policy)
+                filename = str(self.args.Model) + str(self.args.Strategic_node_sovling) + "result_Stage_" + str(self.args.T) + "_States_" + str(self.args.N) + "_Study_" + str(self.args.J) + "_month_" + str(self.args.M)  + "_K_" + str(self.args.K)  + "_Pp_" + str(self.args.P_p_factor) + "_Cu_" + str(self.args.C_u_factor) + "_Op_" +  str(self.args.O_p_factor) + "_Hp_" +  str(self.args.H_p_factor)  + "_policy_" +  str(self.args.Policy)
 
                 df.to_csv(f'{filename}.csv', index=False) 
                 break

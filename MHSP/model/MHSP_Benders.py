@@ -6,9 +6,10 @@ import gurobipy as gp
 from gurobipy import GRB
 from gurobipy import quicksum
 import pdb
+import sys
 
 
-cut_vio_thred = 1e-5
+cut_vio_thred = 1e-3
 time_limit = 3600*4
 
 class subporblem():
@@ -164,7 +165,7 @@ class subporblem():
                 pi_m[w][p] = self.m_Replensih_cons[w][p].pi
                 temp = temp + pi_m[w][p]*v_vals[n,w,p].x
 
-        if( abs(temp-self.sub.ObjVal) >= 1e-5):
+        if( abs(temp-self.sub.ObjVal) >= 1e-3):
             print("problematic dual solution!")
             pdb.set_trace()
 
@@ -177,7 +178,7 @@ class Benders():
     def __init__(self, args, input_data, subporblem):
 
         self.LB = 0
-        self.UB = 1000000
+        self.UB = 9223372036854775807
         self.eps = 1e-3
         self.max_iterations = 100
 
@@ -239,6 +240,8 @@ class Benders():
 
         while(abs((self.UB - self.LB)/self.UB) >= self.eps):
 
+
+
             self.master.optimize()
             self.LB = self.master.ObjVal
 
@@ -266,7 +269,10 @@ class Benders():
                                                    + sum(self.idata.O_p[p]*(self.x[n,w,p].x - self.idata.R_p[p]*self.z[n,w,p].x) for w in range(args.W) for p in range(args.P))
                                                    + (1/args.K)*sum(obj[n][k] for k in range(args.K))) for n in range(args.TN)) 
 
+
             self.UB = min(self.UB,UB_temp)
+            print("iteration:", itr, "LB:", self.UB)
+                
 
             itr += 1 
 

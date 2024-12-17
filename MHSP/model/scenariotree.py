@@ -28,10 +28,10 @@ class ScenarioNode_red:
 
 
 class ScenarioTree:
-    def __init__(self, args, node_num, demand_root):
+    def __init__(self, args, node_num, demand):
 
         self.node_all = [None for _ in range(node_num)]
-        self.node_all[0] = ScenarioNode_red(name="Root (t=0, n=1)",state=args.initial_state, stage=0, root=True, demand=demand_root)
+        self.node_all[0] = ScenarioNode_red(name="Root (t=0, n=1)",state=args.initial_state, stage=0, root=True, demand=demand[args.initial_state])
         self.args = args
 
 
@@ -52,9 +52,9 @@ class ScenarioTree:
                 if(stage_temp < self.args.T):
                     queue.append(current_count)
                     
-                self.node_all[node].add_child_red(current_count,MC_tran[self.node_all[node].state][n])
+                self.node_all[node].add_child_red(current_count,MC_tran[self.node_all[node].stage][self.node_all[node].state][n])
                 name = f"t={stage_temp},n={n}"
-                temp_node = ScenarioNode_red(name=name,state=n, stage=stage_temp, parent=node,to_node=self.node_all[node].prob_to_node*MC_tran[self.node_all[node].state][n], demand=demand[stage_temp-1][n])
+                temp_node = ScenarioNode_red(name=name,state=n, stage=stage_temp, parent=node,to_node=self.node_all[node].prob_to_node*MC_tran[self.node_all[node].stage][self.node_all[node].state][n], demand=demand[n])
                 self.node_all[current_count] = temp_node
 
             queue.pop(0)

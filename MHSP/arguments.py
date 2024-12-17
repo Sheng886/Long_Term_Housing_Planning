@@ -9,14 +9,14 @@ class Arguments:
         self._parser.add_argument('--I', type=int, default=3, help='Number of Supplier')
         self._parser.add_argument('--W', type=int, default=2, help='Number of Staging Area')
         self._parser.add_argument('--J', type=int, default=8, help='Number of Study Region')
-        self._parser.add_argument('--K', type=int, default=3, help='Scenario')
+        self._parser.add_argument('--K', type=int, default=25, help='Scenario')
         self._parser.add_argument('--P', type=int, default=2, help='Housing Type')
         self._parser.add_argument('--G', type=int, default=2, help='Victims Group')
         self._parser.add_argument('--M', type=int, default=6, help='number of node in a scen path')
         self._parser.add_argument('--A', type=int, default=8, help='Number of Attribute')
         
         # Tree
-        self._parser.add_argument('--T', type=int, default=5, help='Number of stage')
+        self._parser.add_argument('--T', type=int, default=10, help='Number of stage')
         self._parser.add_argument('--N', type=int, default=16, help='Number of state')
 
         self._parser.add_argument('--N_G', type=int, default=4, help='Number of state for Gulf')
@@ -45,15 +45,14 @@ class Arguments:
 
         # Method
         self._parser.add_argument('--Strategic_node_sovling', type=int, default=1, help='0: Extend Formulation 1: Benders Decompostion')
-        self._parser.add_argument('--Model', type=str, default="Extend", help='SDDP/Extend/2SSP')
+        self._parser.add_argument('--Model', type=str, default="SDDP", help='SDDP/Extend/2SSP')
 
         # Debug
         self._parser.add_argument('--Cost_print', type=bool, default=False, help='0: Extend Formulation 1: Benders Decompostion')
 
         # Demand path
-        self._parser.add_argument('--demand_path', type=str, default='demand_data/Demand_Stage_3_States_9_Study_499_month_6_K_3.npy', help='Demand')
-        self._parser.add_argument('--demand_root_path', type=str, default='demand_data/Root_Demand_Stage_3_States_9_Study_499_month_6_K_3.npy', help='Demand_root')
-        self._parser.add_argument('--MC_trans_path', type=str, default='demand_data/MC_trans_Stage_3_States_9_Study_499_month_6_K_3.npy', help='MC_trans')
+        self._parser.add_argument('--demand_path', type=str, default='demand_data/Demand_Stage_3_States_6_Study_278_month_6_K_3.csv', help='Demand')
+        self._parser.add_argument('--MC_trans_path', type=str, default='demand_data/MC_trans_Stage_3_States_6.csv', help='MC_trans')
 
 
         # Demand Generator Path
@@ -68,8 +67,9 @@ class Arguments:
         self._parser.add_argument('--Hurricane_landfall_Gulf', type=str, default='generator_data/Hurricane_landfall_Gulf.csv', help='Hurricane_landfall_Gulf file path')
         self._parser.add_argument('--Regression_par', type=str, default='generator_data/Regression_par.xlsx', help='Regression_par file path')
         self._parser.add_argument('--dataall', type=str, default='generator_data/Data_all.csv', help='Regression_par file path')
-        self._parser.add_argument('--tran_A', type=str, default='generator_data/trans_A_10.csv', help='tran_Atlantic')
-        self._parser.add_argument('--tran_G', type=str, default='generator_data/trans_G_10.csv', help='tran_Gulf')
+
+        self._parser.add_argument('--tran_A', type=str, default='generator_data/trans_A_30.csv', help='tran_Atlantic')
+        self._parser.add_argument('--tran_G', type=str, default='generator_data/trans_G_30.csv', help='tran_Gulf')
 
         # Factor
         self._parser.add_argument('--P_p_factor', type=float, default=1, help='Production Factor')

@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
 import numpy as np
 import pandas as pd
 import geopandas as gpd
