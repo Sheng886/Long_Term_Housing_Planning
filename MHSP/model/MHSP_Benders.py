@@ -178,7 +178,7 @@ class Benders():
     def __init__(self, args, input_data, subporblem):
 
         self.LB = 0
-        self.UB = 9223372036854775807
+        self.UB = GRB.INFINITY
         self.eps = 1e-3
         self.max_iterations = 100
 
@@ -238,8 +238,7 @@ class Benders():
         
         itr = 0
 
-        while(abs((self.UB - self.LB)/self.UB) >= self.eps):
-
+        while((self.UB - self.LB)/max(abs(self.UB),1e-10) >= self.eps):
 
 
             self.master.optimize()
@@ -257,7 +256,7 @@ class Benders():
                     pi_f,pi_i,pi_k,pi_l,pi_m,obj[n][k] = self.sub.run(args,n,k,self.v,self.u)
                     
 
-                    if(self.theta[n,k].x < obj[n][k] - cut_vio_thred and abs(self.theta[n,k].x - obj[n][k])/max(abs(self.theta[n,k].x),1e-10) > cut_vio_thred):
+                    if(self.theta[n,k].x < obj[n][k] - cut_vio_thred and (self.theta[n,k].x - obj[n][k])/max(abs(self.theta[n,k].x),1e-10) > cut_vio_thred):
 
                         self.master.addConstr(self.theta[n,k] >= quicksum(self.v[n,w,p]*pi_f[w][p] for w in range(args.W) for p in range(args.P)) 
                                                                 + quicksum(self.idata.B_i[i]*pi_i[m][i] for m in range(args.M+1) for i in range(args.I))

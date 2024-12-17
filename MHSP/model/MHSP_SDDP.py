@@ -325,7 +325,7 @@ class StageProblem_Decomposition:
         # ---------------------------------------- Benders Decompoistion on Strategic Node  -----------------------------------------
 
         LB = 0
-        UB = 9223372036854775807
+        UB = GRB.INFINITY
         eps = 1e-3
 
 
@@ -382,7 +382,7 @@ class StageProblem_Decomposition:
             UB = min(UB,temp_UB)
             # print("LB/UB:",LB,UB)
 
-            if(abs((UB - LB)/UB) <= eps):
+            if((UB - LB)/max(abs(UB),1e-10) <= eps):
                 if(self.args.Cost_print == True):
                     print("Benders Strategic Node Cost:",LB)
                     print("Benders Second-stage Cost:", sub_opt_total)
