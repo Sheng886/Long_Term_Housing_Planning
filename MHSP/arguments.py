@@ -72,12 +72,19 @@ class Arguments:
         self._parser.add_argument('--tran_G', type=str, default='generator_data/trans_G_30.csv', help='tran_Gulf')
 
         # Factor
-        self._parser.add_argument('--P_p_factor', type=float, default=1, help='Production Factor')
-        self._parser.add_argument('--C_u_factor', type=float, default=1, help='Unmet Factor')
         self._parser.add_argument('--O_p_factor', type=float, default=1, help='Acquire Factor')
-        self._parser.add_argument('--H_p_factor', type=float, default=1, help='Holding Factor')
+        
+        # Based on O_p
+        self._parser.add_argument('--H_p_factor', type=float, default=0.05, help='Holding Factor')
+        self._parser.add_argument('--R_p_factor', type=float, default=0.8, help='Recycle Factor')
+        self._parser.add_argument('--C_u_factor', type=float, default=5, help='Unmet Factor')
 
-
+        self._parser.add_argument('--E_w_factor', type=float, default=0.2, help='Initial Capacity Factor')
+        
+        # Help with SA (import from file)
+        self._parser.add_argument('--B_i_factor', type=float, default=1, help='Production Capacity Factor')
+        self._parser.add_argument('--P_p_factor', type=float, default=1, help='Lead time Factor')
+        
         # Evaulation switch
         self._parser.add_argument('--evaluate_switch', type=bool, default=False, help='Acquire Factor')
         # Policy

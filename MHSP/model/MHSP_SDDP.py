@@ -381,18 +381,11 @@ class StageProblem_Decomposition:
 
             UB = min(UB,temp_UB)
             # print("LB/UB:",LB,UB)
-
-            if((UB - LB)/max(abs(UB),1e-10) <= eps):
-                if(self.args.Cost_print == True):
-                    print("Benders Strategic Node Cost:",LB)
-                    print("Benders Second-stage Cost:", sub_opt_total)
-                    for k in range(self.args.K):
-                        print(f"Benders sub {k} Cost",sub_opt[k])
-                break
-
+                
+                
             # ---------------------------------------- Benders Cut  -----------------------------------------
 
-            if(self.phi.x < sub_opt_total - cut_vio_thred and abs(self.phi.x - sub_opt_total)/max(abs(self.phi.x),1e-10) > cut_vio_thred):
+            if(self.phi.x < sub_opt_total + cut_vio_thred and (sub_opt_total-self.phi.x)/max(abs(self.phi.x),1e-10) > cut_vio_thred):
 
                 if(self.stage0 == False):
                     temp_constraint = self.model.addConstr(self.phi >= (1/self.args.K)*quicksum(quicksum(self.v[w,p]*pi_8b[k][w][p] for w in range(self.args.W) for p in range(self.args.P))
@@ -425,6 +418,14 @@ class StageProblem_Decomposition:
 
                 
                 # print("stage:",self.stage,"state:",self.state,"add Benders cut")
+
+            else:
+                if(self.args.Cost_print == True):
+                    print("Benders Strategic Node Cost:",LB)
+                    print("Benders Second-stage Cost:", sub_opt_total)
+                    for k in range(self.args.K):
+                        print(f"Benders sub {k} Cost",sub_opt[k])
+                break
 
 
 
@@ -903,7 +904,6 @@ class solve_SDDP:
         self.args = args
         self.idata = input_data
 
-        start_time = time.time()
         if(args.Strategic_node_sovling == 0):
             self.stage_root = StageProblem_extended(args,input_data,args.initial_state,0,stage0=True)
             self.stage = [[StageProblem_extended(args,input_data,n,t,stage0=False) for n in range(args.N)] for t in range(args.T-1)] 
@@ -912,9 +912,6 @@ class solve_SDDP:
             self.stage_root = StageProblem_Decomposition(args,input_data,args.initial_state,0,stage0=True)
             self.stage = [[StageProblem_Decomposition(args,input_data,n,t,stage0=False) for n in range(args.N)] for t in range(args.T-1)] 
             self.stage_leaf = [StageProblem_Decomposition(args,input_data,n,args.T-1,last_stage=True) for n in range(args.N)];
-        end_time = time.time()
-        time_taken = end_time - start_time
-        print("ScenarioTree generated.",time_taken,"secs.")
         print("Memory Used.",sys.getsizeof(self.stage) + sys.getsizeof(self.stage_root) + sys.getsizeof(self.stage_leaf))
 
     def sample_path(self, args):

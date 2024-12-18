@@ -14,7 +14,7 @@ import sys
 class input_data_class:
     def __init__(self, args):
 
-        ### ------------------ MC & Poisson --------------- ###
+        ### ------------------ Demand --------------- ###
 
         # Read the CSV file
         start_time = time.time()
@@ -45,6 +45,8 @@ class input_data_class:
         args.M = int(info[9])
         args.K = int(info[11])
 
+        ### ------------------ MC Matrix --------------- ###
+
         start_time = time.time()
         data = np.loadtxt(args.MC_trans_path, delimiter=",", skiprows=1) 
 
@@ -57,13 +59,6 @@ class input_data_class:
         # Create an empty array and fill it with the values
         self.MC_tran_matrix  = np.zeros(shape)
         self.MC_tran_matrix [tuple(indices.T)] = values  # Use advanced indexing to map values back
-
-        # pdb.set_trace()
-
-        # sum_result = np.sum(self.demand, axis=(3,4,5))
-        # Print the shape and the result
-        # print("Shape of the result after summing first three dimensions:", sum_result.shape)
-        # print("Summation result:", sum_result)
 
         end_time = time.time()
         time_taken = end_time - start_time
@@ -85,29 +80,19 @@ class input_data_class:
             print("ScenarioTree generated.",time_taken,"secs.")
             print("Memory Used.",sys.getsizeof(self.tree)) 
 
-        # self.tree.print_tree_sce()
-        # self.tree.print_tree_red()
-        
-        # pdb.set_trace()
-
-
-        ### ------------------ Distance matrix ------------ ###
-
-        # df_Staging_Area_loc = pd.read_excel("data/Staging_Area_loc.xlsx")
-        # df_Study_Region_loc = pd.read_excel("data/Study_Region_loc.xlsx")
-        # df_Suppy_node_loc = pd.read_excel("data/Suppy_node_loc.xlsx")
-
-        # name_column_loc = list(df_Staging_Area_loc.columns)
-        # df_Staging_Area_loc = df_Staging_Area_loc[['latitude','longitude']]
-        # df_Study_Region_loc = df_Study_Region_loc[['latitude','longitude']]
-        # df_Suppy_node_loc = df_Suppy_node_loc[['latitude','longitude']]
-
-        # self.wj_dis = func.distance_matrix(df_Staging_Area_loc,df_Study_Region_loc)
-        # self.iw_dis = func.distance_matrix(df_Suppy_node_loc,df_Staging_Area_loc)
-
         start_time = time.time()
-        # ### ------------------ Transportation price ------------------ ### 
-        self.t_cost = args.t_cost
+
+        # ### ------------------Supply ------------------ ###
+
+        self.B_i = np.zeros((args.I))
+
+        df_I = pd.read_excel("data/Supply_Info.xlsx")
+
+        for i in range(args.I):
+            self.B_i[i]  = df_I["Production"][i]
+
+        print("-------------Supply-----------------------")
+        print("Production Capacity:", self.B_i)
 
         # ### ------------------ House Information ------------------ ###
 
@@ -116,40 +101,31 @@ class input_data_class:
         self.R_p = np.zeros((args.P))
         self.H_p = np.zeros((args.P))
 
-        
-
 
         df_House_info = pd.read_excel("data/House_Info.xlsx")
 
         for p in range(args.P):
-            # self.P_p[p] = args.P_p_factor*df_House_info.iloc[0][p+1]
-            self.P_p[p] = args.P_p_factor*2
-            # self.O_p[p] = args.O_p_factor*df_House_info.iloc[1][p+1]
-            self.O_p[p] = args.O_p_factor*1000
-            self.R_p[p] = df_House_info.iloc[2][p+1]
-            self.H_p[p] =  self.O_p[p]*args.H_p_factor*df_House_info.iloc[2][p+1]
+            self.P_p[p] = args.P_p_factor*df_House_info.iloc[0][p+1]
+            self.O_p[p] = args.O_p_factor*df_House_info.iloc[1][p+1]
+            self.R_p[p] = args.R_p_factor
+            self.H_p[p] = args.H_p_factor*self.O_p[p]
 
-            # print("R:", self.O_p[p])
-            # print("R:", self.H_p[p])
+        print("-------------House Info-----------------------")
+        print("Production time:", self.P_p)
+        print("Acquire Cost:", self.O_p)
+        print("Recycle Cost:", args.R_p_factor*self.O_p)
+        print("Holding Cost:", self.H_p)
 
-        # ### ------------------Supply ------------------ ###
-        self.B_i = np.zeros((args.I))
 
-        df_I = pd.read_excel("data/Supply_Info.xlsx")
-
-        for i in range(args.I):
-            self.B_i[i]  = df_I["Production"][i]
 
         # ### ------------------Unmet Penalty Parameter ------------------ ###
         self.CU_g = np.zeros((args.G))
-
-        df_CU_g = pd.read_excel("data/Victim_Info.xlsx")
-
         for g in range(args.G):
-            # self.CU_g[g] = args.C_u_factor*df_CU_g.iloc[0][g+1]
-            self.CU_g[g] = args.C_u_factor*100*self.O_p[g]
+            self.CU_g[g] = args.C_u_factor*self.O_p[g]
 
-            # print(self.CU_g[g])
+        print("-------------Penalty -----------------------")
+        print("Unmet penalty:", self.CU_g)
+
 
 
         # ### ------------------Staging Area Capacity ------------------ ###
@@ -160,11 +136,11 @@ class input_data_class:
 
         for w in range(args.W):
             self.Cap_w[w]  = df_Cap_w["Capacity"][w]
-            self.E_w[w] = df_Cap_w["Etend_price"][w]
+            self.E_w[w] = (sum(self.O_p)/args.P)*args.E_w_factor
 
-            # print("Cap_w:", df_Cap_w["Capacity"][w])
-            # print("E_w:", df_Cap_w["Etend_price"][w])
-
+        print("-------------Penalty -----------------------")
+        print("Inital Capacity:", self.Cap_w)
+        print("Increasing Capacity Cost:", self.E_w)
             
         end_time = time.time()
         time_taken = end_time - start_time

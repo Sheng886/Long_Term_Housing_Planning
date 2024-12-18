@@ -241,7 +241,10 @@ class Benders():
         while((self.UB - self.LB)/max(abs(self.UB),1e-10) >= self.eps):
 
 
+            self.master.update()
             self.master.optimize()
+            if self.master.status != GRB.OPTIMAL:
+                print("infeasible or unbounded")
             self.LB = self.master.ObjVal
 
             pi_f = np.zeros((args.W,args.P))
@@ -254,9 +257,13 @@ class Benders():
             for n in range(args.TN):
                 for k in range(args.K):
                     pi_f,pi_i,pi_k,pi_l,pi_m,obj[n][k] = self.sub.run(args,n,k,self.v,self.u)
-                    
 
-                    if(self.theta[n,k].x < obj[n][k] - cut_vio_thred and (self.theta[n,k].x - obj[n][k])/max(abs(self.theta[n,k].x),1e-10) > cut_vio_thred):
+                    # print(self.theta[n,k].x < obj[n][k] - cut_vio_thred)
+                    # print((self.theta[n,k].x - obj[n][k])/max(abs(self.theta[n,k].x),1e-10))
+
+                    if(self.theta[n,k].x < obj[n][k] + cut_vio_thred and (obj[n][k]-self.theta[n,k].x)/max(abs(self.theta[n,k].x),1e-10) > cut_vio_thred):
+                        # print("add cut")
+
 
                         self.master.addConstr(self.theta[n,k] >= quicksum(self.v[n,w,p]*pi_f[w][p] for w in range(args.W) for p in range(args.P)) 
                                                                 + quicksum(self.idata.B_i[i]*pi_i[m][i] for m in range(args.M+1) for i in range(args.I))
@@ -270,7 +277,7 @@ class Benders():
 
 
             self.UB = min(self.UB,UB_temp)
-            print("iteration:", itr, "LB:", self.UB)
+            print("iteration:", itr, "LB/UB:", self.LB, self.UB)
                 
 
             itr += 1 
