@@ -76,14 +76,15 @@ class Arguments:
         
         # Based on O_p
         self._parser.add_argument('--H_p_factor', type=float, default=0.05, help='Holding Factor')
-        self._parser.add_argument('--R_p_factor', type=float, default=0.8, help='Recycle Factor')
+        self._parser.add_argument('--R_p_factor', type=float, default=0.6, help='Recycle Factor')
         self._parser.add_argument('--C_u_factor', type=float, default=5, help='Unmet Factor')
 
-        self._parser.add_argument('--E_w_factor', type=float, default=0.2, help='Initial Capacity Factor')
+        self._parser.add_argument('--E_w_factor', type=float, default=0.2, help='Increasing Capacity Factor')
         
         # Help with SA (import from file)
         self._parser.add_argument('--B_i_factor', type=float, default=1, help='Production Capacity Factor')
         self._parser.add_argument('--P_p_factor', type=float, default=1, help='Lead time Factor')
+        self._parser.add_argument('--Cp_w_factor', type=float, default=1, help='Initial Staging Area')
         
         # Evaulation switch
         self._parser.add_argument('--evaluate_switch', type=bool, default=False, help='Acquire Factor')

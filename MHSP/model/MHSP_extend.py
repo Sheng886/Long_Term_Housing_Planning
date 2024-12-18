@@ -18,7 +18,7 @@ class baseline_class():
 
         # Stage variable
         self.u = self.model.addVars(args.TN, args.W, lb=0.0, vtype=GRB.CONTINUOUS, name='unw')
-        self.y = self.model.addVars(args.TN, args.W,    lb=0.0, vtype=GRB.CONTINUOUS, name='ynw')
+        self.y = self.model.addVars(args.TN, args.W,  lb=0.0, vtype=GRB.CONTINUOUS, name='ynw')
         self.v = self.model.addVars(args.TN, args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='vnwp')
         self.x = self.model.addVars(args.TN, args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='xnwp')
         self.z = self.model.addVars(args.TN, args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='znwp')

@@ -135,7 +135,7 @@ class input_data_class:
         df_Cap_w = pd.read_excel("data/Staging_Area_info.xlsx")
 
         for w in range(args.W):
-            self.Cap_w[w]  = df_Cap_w["Capacity"][w]
+            self.Cap_w[w]  = args.Cp_w_factor*df_Cap_w["Capacity"][w]
             self.E_w[w] = (sum(self.O_p)/args.P)*args.E_w_factor
 
         print("-------------Penalty -----------------------")

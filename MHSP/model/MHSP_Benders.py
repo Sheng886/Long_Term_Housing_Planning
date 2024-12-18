@@ -9,7 +9,7 @@ import pdb
 import sys
 
 
-cut_vio_thred = 1e-3
+cut_vio_thred = 1e-5
 time_limit = 3600*4
 
 class subporblem():
