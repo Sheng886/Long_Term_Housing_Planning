@@ -181,8 +181,10 @@ def main_generator(args):
     for n1 in states_A:
         for n2 in states_G:
             states.append([n1, n2])
+            # print(n1,n2)
 
     args.N = len(states_A) * len(states_G)
+    # pdb.set_trace()
 
     # state range ------------------------------------------------------------------
 
@@ -301,7 +303,7 @@ def main_generator(args):
             A_month_freq = distribute_hurricane_month(freq_sample_path_A, Atlantic_month_dis)
             G_month_freq = distribute_hurricane_month(freq_sample_path_G, Gulf_month_dis)
 
-            # print(freq_sample_path_A,freq_sample_path_G)
+            print(n_index,n,freq_sample_path_A,freq_sample_path_G)
 
 
             for m in range(args.M+1):
@@ -400,6 +402,8 @@ def main_generator(args):
 
 
                 demand[n_index][k][m] = study_region_demand_np
+
+
 
 
     states_len = len(states)

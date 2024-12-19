@@ -76,7 +76,7 @@ class Arguments:
         
         # Based on O_p
         self._parser.add_argument('--H_p_factor', type=float, default=0.05, help='Holding Factor')
-        self._parser.add_argument('--R_p_factor', type=float, default=0.6, help='Recycle Factor')
+        self._parser.add_argument('--R_p_factor', type=float, default=0.75, help='Recycle Factor')
         self._parser.add_argument('--C_u_factor', type=float, default=5, help='Unmet Factor')
 
         self._parser.add_argument('--E_w_factor', type=float, default=0.2, help='Increasing Capacity Factor')
