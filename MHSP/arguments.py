@@ -51,8 +51,8 @@ class Arguments:
         self._parser.add_argument('--Cost_print', type=bool, default=False, help='0: Extend Formulation 1: Benders Decompostion')
 
         # Demand path
-        self._parser.add_argument('--demand_path', type=str, default='demand_data/Demand_Stage_3_States_6_Study_278_month_6_K_3.csv', help='Demand')
-        self._parser.add_argument('--MC_trans_path', type=str, default='demand_data/MC_trans_Stage_3_States_6.csv', help='MC_trans')
+        self._parser.add_argument('--demand_path', type=str, default='demand_data/Demand_Stage_2_States_6_Study_278_month_6_K_2.csv', help='Demand')
+        self._parser.add_argument('--MC_trans_path', type=str, default='demand_data/MC_trans_Stage_2_States_6.csv', help='MC_trans')
 
 
         # Demand Generator Path
@@ -85,6 +85,9 @@ class Arguments:
         self._parser.add_argument('--B_i_factor', type=float, default=1, help='Production Capacity Factor')
         self._parser.add_argument('--P_p_factor', type=float, default=1, help='Lead time Factor')
         self._parser.add_argument('--Cp_w_factor', type=float, default=1, help='Initial Staging Area')
+        self._parser.add_argument('--II_factor', type=float, default=0.25, help='Initial Invenotry')
+
+        self._parser.add_argument('--price_strategic', type=float, default=0.6, help='Initial Invenotry')
         
         # Evaulation switch
         self._parser.add_argument('--evaluate_switch', type=bool, default=False, help='Acquire Factor')

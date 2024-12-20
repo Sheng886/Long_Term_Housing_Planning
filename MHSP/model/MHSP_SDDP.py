@@ -8,7 +8,7 @@ from gurobipy import quicksum
 import time
 import pdb
 import sys
-
+import matplotlib.pyplot as plt
 
 
 cut_vio_thred = 1e-5
@@ -242,13 +242,13 @@ class StageProblem_Decomposition:
         # Objective
         if(last_stage == False):
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
-                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
+                                  + quicksum(args.price_strategic*self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
                                   + self.phi
                                   + quicksum(self.idata.MC_tran_matrix[self.stage][state][n]*self.theta[n] for n in range(args.N)) 
                                 , GRB.MINIMIZE);
         else:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
-                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
+                                  + quicksum(args.price_strategic*self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
                                   + self.phi
                                 , GRB.MINIMIZE);
 
@@ -288,7 +288,7 @@ class StageProblem_Decomposition:
         for w in range(args.W):
             for p in range(args.P):
                 if stage0 == True:
-                    self.model.addConstr(self.v[w,p] == self.x[w,p] - self.z[w,p])
+                    self.model.addConstr(self.v[w,p] == self.x[w,p] - self.z[w,p] + self.idata.II_w[w][p])
                 else:
                     self.c_inv_level[w][p] = self.model.addConstr(self.v[w,p] - self.x[w,p] + self.z[w,p] ==  0)
 
@@ -601,7 +601,7 @@ class StageProblem_extended:
         # Objective
         if(last_stage == False):
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
-                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
+                                  + quicksum(args.price_strategic*self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
                                   + (1/args.K)*quicksum(quicksum(self.idata.O_p[p]*self.aak[k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
                                                       + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                                                 + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)) for k in range(args.K))
@@ -609,7 +609,7 @@ class StageProblem_extended:
                                 , GRB.MINIMIZE);
         else:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
-                                  + quicksum(self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
+                                  + quicksum(args.price_strategic*self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
                                   + (1/args.K)*quicksum(quicksum(self.idata.O_p[p]*self.aak[k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
                                                       + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                                                 + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)) for k in range(args.K))
@@ -650,7 +650,7 @@ class StageProblem_extended:
         for w in range(args.W):
             for p in range(args.P):
                 if stage0 == True:
-                    self.model.addConstr(self.v[w,p] == self.x[w,p] - self.z[w,p])
+                    self.model.addConstr(self.v[w,p] == self.x[w,p] - self.z[w,p] + self.idata.II_w[w][p])
                 else:
                     self.c_inv_level[w][p] = self.model.addConstr(self.v[w,p] - self.x[w,p] + self.z[w,p] ==  0)
 
@@ -1079,7 +1079,7 @@ class solve_SDDP:
             #     pi_b,pi_c,LB,Benders_cut_pi =  self.stage_root.backward_run(iter)
 
             LB_list.append(LB)
-            if(iter%50 == 0):
+            if(iter%20 == 0):
                 print("iteration:", iter, "LB:", LB)
 
             
@@ -1097,6 +1097,7 @@ class solve_SDDP:
                 solution_u = np.zeros((self.args.T+1,self.args.N))
                 solution_v = np.zeros((self.args.T+1,self.args.N))
                 solution_obj = np.zeros((self.args.T+1,self.args.N))
+                solution_total = np.zeros((simulate_iter))
                 staging_area_expand_cost = np.zeros((self.args.T+1,self.args.N))
                 inventory_expand_cost = np.zeros((self.args.T+1,self.args.N))
                 replenmship_cost = np.zeros((self.args.T+1,self.args.N))
@@ -1107,7 +1108,7 @@ class solve_SDDP:
                 path_count = np.zeros((self.args.T+1,self.args.N))
 
 
-                for iter in range(simulate_iter):
+                for counts in range(simulate_iter):
 
                     # sample path
                     sample_path = self.sample_path(self.args)
@@ -1141,6 +1142,7 @@ class solve_SDDP:
                     acquire_cost[0][self.args.initial_state] += acquire_cost_temp
                     holding_cost[0][self.args.initial_state] += holdings_cost_temp
                     path_count[0][self.args.initial_state] += 1
+                    solution_total[counts] = solution_total[counts] + obj_ex
 
                     
                     for stage in range(self.args.T-1):
@@ -1161,6 +1163,7 @@ class solve_SDDP:
                         acquire_cost[stage+1][sample_path[stage]] += acquire_cost_temp
                         holding_cost[stage+1][sample_path[stage]] += holdings_cost_temp
                         path_count[stage+1][sample_path[stage]] += 1
+                        solution_total[counts] = solution_total[counts] + obj_ex
                     
                     if(self.args.Strategic_node_sovling == 0):
                         u,v,obj_ex,staging_area_expand_cost_temp,inventory_expand_cost_temp,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp,holdings_cost_temp = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
@@ -1179,9 +1182,11 @@ class solve_SDDP:
                     acquire_cost[self.args.T][sample_path[self.args.T-1]] += acquire_cost_temp
                     holding_cost[self.args.T][sample_path[self.args.T-1]] += holdings_cost_temp
                     path_count[self.args.T][sample_path[self.args.T-1]] += 1
+                    solution_total[counts] = solution_total[counts] + obj_ex
 
                 
                 solution = []
+
 
                 # pdb.set_trace()
                 for t in range(self.args.T+1):
@@ -1196,6 +1201,13 @@ class solve_SDDP:
                 filename = str(self.args.Model) + str(self.args.Strategic_node_sovling) + "result_Stage_" + str(self.args.T) + "_States_" + str(self.args.N) + "_Study_" + str(self.args.J) + "_month_" + str(self.args.M)  + "_K_" + str(self.args.K)  + "_Pp_" + str(self.args.P_p_factor) + "_Cu_" + str(self.args.C_u_factor) + "_Op_" +  str(self.args.O_p_factor) + "_Hp_" +  str(self.args.H_p_factor)  + "_policy_" +  str(self.args.Policy)
 
                 df.to_csv(f'{filename}.csv', index=False) 
+                print("LB:", max(LB_list))
+                plt.boxplot(solution_total)
+                plt.savefig(f'{filename}.png')
+                plt.close()
+                np.save(f'{filename}.npy', solution_total) 
+
+
                 break
 
 

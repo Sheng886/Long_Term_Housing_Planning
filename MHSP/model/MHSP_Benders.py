@@ -9,7 +9,7 @@ import pdb
 import sys
 
 
-cut_vio_thred = 1e-5
+cut_vio_thred = 1e-3
 time_limit = 3600*4
 
 class subporblem():
@@ -200,7 +200,7 @@ class Benders():
 
         # Objective
         self.master.setObjective(quicksum(self.tree[n].prob_to_node*(quicksum(self.idata.E_w[w]*self.y[n,w] for w in range(args.W)) 
-                                                                  + quicksum(self.idata.O_p[p]*(self.x[n,w,p] - self.idata.R_p[p]*self.z[n,w,p]) for w in range(args.W) for p in range(args.P)) 
+                                                                  + quicksum(args.price_strategic*self.idata.O_p[p]*(self.x[n,w,p] - self.idata.R_p[p]*self.z[n,w,p]) for w in range(args.W) for p in range(args.P)) 
                                                                   + (1/args.K)*quicksum(self.theta[n,k] for k in range(args.K))) for n in range(args.TN)), GRB.MINIMIZE);
 
 
@@ -223,7 +223,7 @@ class Benders():
             for w in range(args.W):
                 for p in range(args.P):
                     if n == 0:
-                        self.master.addConstr(self.v[n,w,p] == self.x[n,w,p] - self.z[n,w,p])
+                        self.master.addConstr(self.v[n,w,p] == self.x[n,w,p] - self.z[n,w,p] + self.idata.II_w[w][p])
                     else:
                         parent_node =  self.tree[n].parent
                         self.master.addConstr(self.v[n,w,p] == self.v[parent_node,w,p] + self.x[n,w,p] - self.z[n,w,p])

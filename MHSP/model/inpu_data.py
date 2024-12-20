@@ -131,15 +131,19 @@ class input_data_class:
         # ### ------------------Staging Area Capacity ------------------ ###
         self.Cap_w = np.zeros((args.W))
         self.E_w = np.zeros((args.W))
+        self.II_w = np.zeros((args.W,args.P))
 
         df_Cap_w = pd.read_excel("data/Staging_Area_info.xlsx")
 
         for w in range(args.W):
             self.Cap_w[w]  = args.Cp_w_factor*df_Cap_w["Capacity"][w]
             self.E_w[w] = (sum(self.O_p)/args.P)*args.E_w_factor
+            for p in range(args.P):
+                self.II_w[w][p] = self.Cap_w[w]*args.II_factor
 
         print("-------------Penalty -----------------------")
         print("Inital Capacity:", self.Cap_w)
+        print("Inital Inventory:", self.II_w)
         print("Increasing Capacity Cost:", self.E_w)
             
         end_time = time.time()
