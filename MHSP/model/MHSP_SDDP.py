@@ -11,7 +11,7 @@ import sys
 import matplotlib.pyplot as plt
 
 
-cut_vio_thred = 1e-5
+cut_vio_thred = 1e-2
 
 class subproblem:
 
@@ -438,7 +438,7 @@ class StageProblem_Decomposition:
         if(self.args.evaluate_switch == True):
 
             staging_area_expand_cost_temp = sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W))                                   
-            inventory_expand_cost_temp =  sum(self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
+            inventory_expand_cost_temp =  sum(self.args.price_strategic*self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
             holding_cost_temp = sum(self.idata.H_p[p]*self.v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
 
            
@@ -562,6 +562,7 @@ class StageProblem_extended:
         self.state = state
         self.stage = stage
         self.stage0 = stage0
+        self.last_stage = last_stage
 
         self.cut_rhs = []
         self.cut = []
@@ -594,9 +595,6 @@ class StageProblem_extended:
         self.bbk = self.model.addVars(args.K, args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='bbktwp')
         if(last_stage == False):
             self.theta = self.model.addVars(args.N, lb=0.0, vtype=GRB.CONTINUOUS, name='theta')
-
-
-
 
         # Objective
         if(last_stage == False):
@@ -752,8 +750,6 @@ class StageProblem_extended:
         self.cut_rhs_temp = []
         self.cut_temp = []
 
-
-
         self.model.update()
         self.model.setParam("OutputFlag", 0)
         self.model.optimize()
@@ -783,20 +779,29 @@ class StageProblem_extended:
         replenmship_cost = 0
         Shortage_cost = 0
         acquire_cost = 0
-        holding_cost_temp = 0
+        holding_cost = 0
+
+        obj = self.model.ObjVal
+
 
         if(self.args.evaluate_switch == True):
 
             
             staging_area_expand_cost = sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W))                                   
-            inventory_expand_cost =  sum(self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
+            inventory_expand_cost =  sum(self.args.price_strategic*self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
             replenmship_cost = (1/self.args.K)*sum(sum(self.idata.O_p[p]*self.aak[k,w,p].x - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p].x for w in range(self.args.W) for p in range(self.args.P)) for k in range(self.args.K))
             Shortage_cost =  (1/self.args.K)*sum(sum(sum(self.idata.CU_g[g]*self.sk[k,m,j,g].x for j in range(self.args.J) for g in range(self.args.G)) for m in range(self.args.M+1)) for k in range(self.args.K))
             acquire_cost =  (1/self.args.K)*sum(sum( sum(self.idata.O_p[p]*self.ak[k,m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for p in range(self.args.P)) for m in range(self.args.M+1)) for k in range(self.args.K))
-            holding_cost_temp = sum(self.idata.H_p[p]*self.v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+            holding_cost = sum(self.idata.H_p[p]*self.v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+            if(self.last_stage == False):
+                obj = self.model.ObjVal - sum(self.idata.MC_tran_matrix[self.stage][self.state][n]*self.theta[n].x for n in range(self.args.N))
+                # print(sum(self.idata.MC_tran_matrix[self.stage][self.state][n]*self.theta[n].x for n in range(self.args.N)))
+
+                if(self.stage0 == True):
+                    print(self.model.ObjVal,obj)
 
 
-        return self.u,self.v,self.model.ObjVal,staging_area_expand_cost,inventory_expand_cost,replenmship_cost,Shortage_cost,acquire_cost,holding_cost_temp
+        return self.u,self.v,obj,staging_area_expand_cost,inventory_expand_cost,replenmship_cost,Shortage_cost,acquire_cost,holding_cost
 
     def backward_run(self):
 
@@ -926,6 +931,10 @@ class solve_SDDP:
             state = next_state[0]
             path.append(state)
 
+        # for stage in range(args.T):
+        #     state = 5
+        #     path.append(state)
+
         # print(path)
         return path
 
@@ -935,19 +944,20 @@ class solve_SDDP:
         Elapsed = time.time() - start
         if(iter > self.args.MAX_ITER):
             flag = 1
-            print("max iteration is reached")
+            print("max iteration is reached", "stop at iteration", iter)
         elif (Elapsed > self.args.time_limit):
             flag = 2
-            print("time limit is reached")
+            print("time limit is reached", "stop at iteration", iter)
         elif (cutviol_iter > self.args.CUTVIOL_MAXITER):
             flag = 3
-            print("cut violation is reached")
+            print("cut violation is reached", "stop at iteration", iter)
         else:
             if iter > self.args.STALL:
-                relative_gap = (LB[iter-1]-LB[iter-1-self.args.STALL])/max(1e-10,abs(LB[iter-1-self.args.STALL]))
+                relative_gap = ((LB[iter-1]-LB[iter-1-self.args.STALL])/max(1e-10,abs(LB[iter-1-self.args.STALL])))
                 if relative_gap < self.args.LB_TOL:
                     flag = 4
-                    print("the LB is not making significant progress")
+                    print(relative_gap)
+                    print("the LB is not making significant progress", "stop at iteration", iter)
         return flag, Elapsed
 
     def Benders_cut_shraing(self,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,root=False,leaf=False,state=None,stage=None):
@@ -987,19 +997,24 @@ class solve_SDDP:
     def run(self):
 
         start = time.time()
-        LB_list = []
+        
         relative_gap = 1e10
         cutviol_iter = 0
+
+        iter_list = []
+        LB_list = []
 
         for iter in range(self.args.MAX_ITER):
 
             # sample path
             sample_path = self.sample_path(self.args)
+            iter_list.append(iter)
             # print(sample_path)
 
             u = 0
             v = 0
             obj_ex = 0
+            LB_temp = 0
 
             # ---------------------------------------------------- Forward ----------------------------------------------------
             if(self.args.Strategic_node_sovling == 0):
@@ -1014,6 +1029,8 @@ class solve_SDDP:
 
                 # print("22222")
 
+            LB_temp = obj_ex + LB_temp
+
             
             for stage in range(self.args.T-1):
 
@@ -1026,6 +1043,8 @@ class solve_SDDP:
                     
                     # Benders Cut Sharing
                     self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,state=sample_path[stage],stage=stage)
+
+                # LB_temp = obj_ex + LB_temp
             
             if(self.args.Strategic_node_sovling == 0):
                 u,v,obj_ex,temp1,temp2,temp3,temp4,temp5,temp6 = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
@@ -1035,16 +1054,14 @@ class solve_SDDP:
                 # Benders Cut Sharing
                 self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,leaf=True,state=sample_path[self.args.T-1])
 
-            # print("------------------------------------")
-
-            
-
+            # LB_temp = obj_ex + LB_temp
 
             # ----------------------------------- Backward -----------------------------------
             if(self.args.Strategic_node_sovling == 0):
                 pi_b,pi_c,pi_e,pi_h,cut_pi,LB = self.stage_leaf[sample_path[self.args.T-1]].backward_run()
             elif(self.args.Strategic_node_sovling == 1):
                 pi_b,pi_c,Benders_cut_pi,LB = self.stage_leaf[sample_path[self.args.T-1]].backward_run(iter)
+
             
             for stage in reversed(range(self.args.T-1)):
 
@@ -1062,10 +1079,12 @@ class solve_SDDP:
                 elif(self.args.Strategic_node_sovling == 1):
                     pi_b,pi_c,Benders_cut_pi,LB =  self.stage[stage][sample_path[stage]].backward_run(iter)
 
+
             if(self.args.Strategic_node_sovling == 0):
                 cut_iter_temp = self.stage_root.add_cut(LB,0,0,sample_path[0],pi_b,pi_c,pi_e,pi_h,cut_pi)
             elif(self.args.Strategic_node_sovling == 1):
                 cut_iter_temp = self.stage_root.add_cut(LB,0,0,sample_path[0],pi_b,pi_c,Benders_cut_pi)
+
 
             cutviol_iter = cutviol_iter + cut_iter_temp
 
@@ -1078,9 +1097,9 @@ class solve_SDDP:
             # elif(self.args.Strategic_node_sovling == 1):
             #     pi_b,pi_c,LB,Benders_cut_pi =  self.stage_root.backward_run(iter)
 
-            LB_list.append(LB)
+            LB_list.append(LB_temp)
             if(iter%20 == 0):
-                print("iteration:", iter, "LB:", LB)
+                print("iteration:", iter, "LB:", LB_temp)
 
             
             # ----------------------------------- Stop Criteria -----------------------------------
@@ -1091,13 +1110,27 @@ class solve_SDDP:
 
                 self.args.evaluate_switch = True
 
+                # plt.plot(LB_list, marker='o', linestyle='-', color='b', label='Data')
+
+                # # Customize the plot
+                # plt.xlabel("iter")
+                # plt.ylabel("LB")
+                # plt.legend()
+                # plt.grid(True)
+                # plt.show()
+
+                # pdb.set_trace()
+
                 # ---------------------------------------------------- Polciy Simulation ----------------------------------------------------
                 
                 simulate_iter = 1000
                 solution_u = np.zeros((self.args.T+1,self.args.N))
                 solution_v = np.zeros((self.args.T+1,self.args.N))
                 solution_obj = np.zeros((self.args.T+1,self.args.N))
+                
                 solution_total = np.zeros((simulate_iter))
+
+
                 staging_area_expand_cost = np.zeros((self.args.T+1,self.args.N))
                 inventory_expand_cost = np.zeros((self.args.T+1,self.args.N))
                 replenmship_cost = np.zeros((self.args.T+1,self.args.N))
@@ -1184,6 +1217,8 @@ class solve_SDDP:
                     path_count[self.args.T][sample_path[self.args.T-1]] += 1
                     solution_total[counts] = solution_total[counts] + obj_ex
 
+                    # print(solution_total[counts])
+
                 
                 solution = []
 
@@ -1201,7 +1236,10 @@ class solve_SDDP:
                 filename = str(self.args.Model) + str(self.args.Strategic_node_sovling) + "result_Stage_" + str(self.args.T) + "_States_" + str(self.args.N) + "_Study_" + str(self.args.J) + "_month_" + str(self.args.M)  + "_K_" + str(self.args.K)  + "_Pp_" + str(self.args.P_p_factor) + "_Cu_" + str(self.args.C_u_factor) + "_Ew_" +  str(self.args.E_w_factor) + "_Cpw_" +  str(self.args.Cp_w_factor)  + "_policy_" +  str(self.args.Policy)
 
                 df.to_csv(f'{filename}.csv', index=False) 
-                print("LB:", max(LB_list))
+                print("LB:", LB_temp)
+                print("std_sol:", np.std(solution_total))
+                print("mean_so:", np.mean(solution_total))
+                print("gap:", (np.mean(solution_total) - LB_temp)/np.mean(solution_total))
                 plt.boxplot(solution_total)
                 plt.savefig(f'{filename}.png')
                 plt.close()
@@ -1209,10 +1247,3 @@ class solve_SDDP:
 
 
                 break
-
-
-            
-
-
-
-

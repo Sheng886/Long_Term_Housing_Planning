@@ -106,7 +106,7 @@ class input_data_class:
 
         for p in range(args.P):
             self.P_p[p] = args.P_p_factor*df_House_info.iloc[0][p+1]
-            self.O_p[p] = args.O_p_factor*df_House_info.iloc[1][p+1]
+            self.O_p[p] = args.O_p_factor*df_House_info.iloc[1][p+1]*args.sc
             self.R_p[p] = args.R_p_factor
             self.H_p[p] = args.H_p_factor*self.O_p[p]
 
@@ -149,6 +149,8 @@ class input_data_class:
         end_time = time.time()
         time_taken = end_time - start_time
         print("Parameters loaded.",time_taken,"secs.")
+
+        print("# of Stage:", args.T, "# of state:", args.N)
 
 
         # pdb.set_trace()

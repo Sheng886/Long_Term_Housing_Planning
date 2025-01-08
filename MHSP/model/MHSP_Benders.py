@@ -7,9 +7,10 @@ from gurobipy import GRB
 from gurobipy import quicksum
 import pdb
 import sys
+import time
 
 
-cut_vio_thred = 1e-3
+cut_vio_thred = 1e-4
 time_limit = 3600*4
 
 class subporblem():
@@ -166,7 +167,6 @@ class subporblem():
                 temp = temp + pi_m[w][p]*v_vals[n,w,p].x
 
         if( abs(temp-self.sub.ObjVal) >= 1e-3):
-            print("problematic dual solution!")
             pdb.set_trace()
 
         return pi_f,pi_i,pi_k,pi_l,pi_m,self.sub.ObjVal
@@ -179,8 +179,8 @@ class Benders():
 
         self.LB = 0
         self.UB = GRB.INFINITY
-        self.eps = 1e-3
-        self.max_iterations = 100
+        self.eps = 1e-5
+        self.max_iterations = 200
 
         self.args = args
         self.idata = input_data
@@ -200,7 +200,7 @@ class Benders():
 
         # Objective
         self.master.setObjective(quicksum(self.tree[n].prob_to_node*(quicksum(self.idata.E_w[w]*self.y[n,w] for w in range(args.W)) 
-                                                                  + quicksum(args.price_strategic*self.idata.O_p[p]*(self.x[n,w,p] - self.idata.R_p[p]*self.z[n,w,p]) for w in range(args.W) for p in range(args.P)) 
+                                                                  + quicksum(args.price_strategic*self.idata.O_p[p]*(self.x[n,w,p] - self.idata.R_p[p]*self.z[n,w,p]) + self.idata.H_p[p]*self.v[n,w,p] for w in range(args.W) for p in range(args.P)) 
                                                                   + (1/args.K)*quicksum(self.theta[n,k] for k in range(args.K))) for n in range(args.TN)), GRB.MINIMIZE);
 
 
@@ -223,13 +223,28 @@ class Benders():
             for w in range(args.W):
                 for p in range(args.P):
                     if n == 0:
-                        self.master.addConstr(self.v[n,w,p] == self.x[n,w,p] - self.z[n,w,p] + self.idata.II_w[w][p])
+                        self.master.addConstr(self.v[n,w,p] == self.idata.II_w[w][p] + self.x[n,w,p] - self.z[n,w,p])
                     else:
                         parent_node =  self.tree[n].parent
                         self.master.addConstr(self.v[n,w,p] == self.v[parent_node,w,p] + self.x[n,w,p] - self.z[n,w,p])
 
 
-                            
+    # def termination_check(self, iter, relative_gap, LB, start):
+    #     flag = 0
+    #     Elapsed = time.time() - start
+    #     if(iter > self.args.MAX_ITER):
+    #         flag = 1
+    #         print("max iteration is reached")
+    #     elif (Elapsed > self.args.time_limit):
+    #         flag = 2
+    #         print("time limit is reached")
+    #     else:
+    #         if iter > self.args.STALL:
+    #             relative_gap = (LB[iter-1]-LB[iter-1-self.args.STALL])/max(1e-10,abs(LB[iter-1-self.args.STALL]))
+    #             if relative_gap < self.args.LB_TOL:
+    #                 flag = 4
+    #                 print("the LB is not making significant progress")
+    #     return flag, Elapsed
 
     def run(self,args):
 
@@ -237,9 +252,12 @@ class Benders():
         self.master.setParam('TimeLimit', time_limit)
         
         itr = 0
+        LB_list = []
 
+        start = time.time() 
+
+        # for iter in range(self.args.MAX_ITER):
         while((self.UB - self.LB)/max(abs(self.UB),1e-10) >= self.eps):
-
 
             self.master.update()
             self.master.optimize()
@@ -254,6 +272,8 @@ class Benders():
             pi_m = np.zeros((args.W,args.P))
             obj = np.zeros((args.TN,args.K))
 
+            add_cut_check = 0
+
             for n in range(args.TN):
                 for k in range(args.K):
                     pi_f,pi_i,pi_k,pi_l,pi_m,obj[n][k] = self.sub.run(args,n,k,self.v,self.u)
@@ -262,9 +282,7 @@ class Benders():
                     # print((self.theta[n,k].x - obj[n][k])/max(abs(self.theta[n,k].x),1e-10))
 
                     if(self.theta[n,k].x < obj[n][k] + cut_vio_thred and (obj[n][k]-self.theta[n,k].x)/max(abs(self.theta[n,k].x),1e-10) > cut_vio_thred):
-                        # print("add cut")
-
-
+                        add_cut_check = 1
                         self.master.addConstr(self.theta[n,k] >= quicksum(self.v[n,w,p]*pi_f[w][p] for w in range(args.W) for p in range(args.P)) 
                                                                 + quicksum(self.idata.B_i[i]*pi_i[m][i] for m in range(args.M+1) for i in range(args.I))
                                                                 + quicksum(self.u[n,w]*pi_k[m][w] for m in range(args.M+1) for w in range(args.W))
@@ -272,15 +290,15 @@ class Benders():
                                                                 + quicksum(self.v[n,w,p]*pi_m[w][p] for w in range(args.W) for p in range(args.P)))
 
             UB_temp = sum(self.tree[n].prob_to_node*(sum(self.idata.E_w[w]*self.y[n,w].x for w in range(args.W)) 
-                                                   + sum(self.idata.O_p[p]*(self.x[n,w,p].x - self.idata.R_p[p]*self.z[n,w,p].x) for w in range(args.W) for p in range(args.P))
+                                                   + sum(args.price_strategic*self.idata.O_p[p]*(self.x[n,w,p].x - self.idata.R_p[p]*self.z[n,w,p].x)+ self.idata.H_p[p]*self.v[n,w,p].x for w in range(args.W) for p in range(args.P))
                                                    + (1/args.K)*sum(obj[n][k] for k in range(args.K))) for n in range(args.TN)) 
 
-
             self.UB = min(self.UB,UB_temp)
-            print("iteration:", itr, "LB/UB:", self.LB, self.UB)
-                
+            if(itr%5 == 0):
+                print("iteration:", itr, "LB/UB:", self.LB,self.UB)
 
-            itr += 1 
+            itr = itr+1
+                
 
         print("Opt",self.UB)
 

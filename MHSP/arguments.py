@@ -33,15 +33,15 @@ class Arguments:
         self._parser.add_argument('--s_factor', type=int, default=1, help='Shortage Factor')
 
         # Baseline deamand
-        self._parser.add_argument('--DTrailer', type=int, default=200, help='Baseline deamand Trailer')
+        self._parser.add_argument('--DTrailer', type=int, default=500, help='Baseline deamand Trailer')
         self._parser.add_argument('--DMHU', type=int, default=50, help='Baseline deamand MHU')
 
         # Stop_Criteria
         self._parser.add_argument('--MAX_ITER', type=int, default=100000, help='Shortage Factor')
         self._parser.add_argument('--time_limit', type=int, default=10800, help='Shortage Factor')
         self._parser.add_argument('--CUTVIOL_MAXITER', type=float, default=100000, help='Shortage Factor')
-        self._parser.add_argument('--STALL', type=int, default=200, help='Shortage Factor')
-        self._parser.add_argument('--LB_TOL', type=float, default=1e-4, help='Shortage Factor')
+        self._parser.add_argument('--STALL', type=int, default=20, help='Shortage Factor')
+        self._parser.add_argument('--LB_TOL', type=float, default=1e-6, help='Shortage Factor')
 
         # Method
         self._parser.add_argument('--Strategic_node_sovling', type=int, default=1, help='0: Extend Formulation 1: Benders Decompostion')
@@ -91,8 +91,14 @@ class Arguments:
         
         # Evaulation switch
         self._parser.add_argument('--evaluate_switch', type=bool, default=False, help='Acquire Factor')
+        
         # Policy
         self._parser.add_argument('--Policy', type=str, default='', help='Policy')
+
+        # Scale Down Factor
+        self._parser.add_argument('--sc', type=float, default='0.001', help='Scale Down Factor')
+
+
 
 
 
