@@ -60,6 +60,10 @@ class input_data_class:
         self.MC_tran_matrix  = np.zeros(shape)
         self.MC_tran_matrix [tuple(indices.T)] = values  # Use advanced indexing to map values back
 
+        for stage in range(args.T):
+            for state in range(args.N):
+                self.MC_tran_matrix[stage][state] = self.MC_tran_matrix[stage][state]/sum(self.MC_tran_matrix[stage][state])
+
         end_time = time.time()
         time_taken = end_time - start_time
         print("MC trans matrix loaded.",time_taken,"secs.")

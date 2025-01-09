@@ -246,6 +246,20 @@ class Benders():
     #                 print("the LB is not making significant progress")
     #     return flag, Elapsed
 
+    def sample_path(self, args):
+
+        path = []
+        
+        self.initial_state = args.initial_state
+        state = self.initial_state
+
+        for stage in range(args.T):
+            next_state = np.random.choice(args.N, 1, p=self.idata.MC_tran_matrix[stage][state].tolist())
+            state = next_state[0]
+            path.append(state)
+
+        return path
+
     def run(self,args):
 
         self.master.setParam("OutputFlag", 0)
@@ -299,8 +313,40 @@ class Benders():
 
             itr = itr+1
                 
+        simulate_iter = 1000
+        solution_total = np.zeros((simulate_iter))
 
-        print("Opt",self.UB)
+        for counts in range(simulate_iter):
+
+            sample_path = self.sample_path(self.args)
+
+            node = 0
+            obj = sum(self.idata.E_w[w]*self.y[node,w].x for w in range(args.W)) 
+            obj = obj + sum(args.price_strategic*self.idata.O_p[p]*(self.x[node,w,p].x - self.idata.R_p[p]*self.z[node,w,p].x) + self.idata.H_p[p]*self.v[node,w,p].x for w in range(args.W) for p in range(args.P)) 
+            obj = obj + (1/args.K)*quicksum(self.theta[node,k] for k in range(args.K))
+
+            solution_total[counts] = solution_total[counts] + obj
+            node_pre = node
+
+            for state in sample_path:
+                node = node_pre*self.args.N + state + 1
+                print(state,node)
+                obj = sum(self.idata.E_w[w]*self.y[node,w].x for w in range(args.W)) 
+                obj = obj + sum(args.price_strategic*self.idata.O_p[p]*(self.x[node,w,p].x - self.idata.R_p[p]*self.z[node,w,p].x) + self.idata.H_p[p]*self.v[node,w,p].x for w in range(args.W) for p in range(args.P)) 
+                obj = obj + (1/args.K)*quicksum(self.theta[node,k] for k in range(args.K))
+                solution_total[counts] = solution_total[counts] + obj
+                node_pre = node
+
+        print("Converage(UB/LB):",self.UB,self.LB)
+        print("UB std_sol:", np.std(solution_total))
+        print("UB mean_so:", np.mean(solution_total))
+        print("gap:", (np.mean(solution_total) - self.LB)/np.mean(solution_total))
+
+
+
+
+
+
 
 
 

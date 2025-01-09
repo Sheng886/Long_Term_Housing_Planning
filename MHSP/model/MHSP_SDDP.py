@@ -11,7 +11,7 @@ import sys
 import matplotlib.pyplot as plt
 
 
-cut_vio_thred = 1e-2
+cut_vio_thred = 1e-4
 
 class subproblem:
 
@@ -428,11 +428,11 @@ class StageProblem_Decomposition:
                 break
 
 
-
-
         staging_area_expand_cost_temp = 0
         inventory_expand_cost_temp = 0
         holding_cost_temp = 0
+
+        obj = self.model.ObjVal
 
 
         if(self.args.evaluate_switch == True):
@@ -440,10 +440,10 @@ class StageProblem_Decomposition:
             staging_area_expand_cost_temp = sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W))                                   
             inventory_expand_cost_temp =  sum(self.args.price_strategic*self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
             holding_cost_temp = sum(self.idata.H_p[p]*self.v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+            if(self.last_stage == False):
+                obj = self.model.ObjVal - sum(self.idata.MC_tran_matrix[self.stage][self.state][n]*self.theta[n].x for n in range(self.args.N)) 
 
-           
-
-        return self.u,self.v,LB, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i, staging_area_expand_cost_temp, inventory_expand_cost_temp,holding_cost_temp
+        return self.u,self.v,obj, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i, staging_area_expand_cost_temp, inventory_expand_cost_temp,holding_cost_temp
 
     def backward_run(self,iter):
 
@@ -797,9 +797,6 @@ class StageProblem_extended:
                 obj = self.model.ObjVal - sum(self.idata.MC_tran_matrix[self.stage][self.state][n]*self.theta[n].x for n in range(self.args.N))
                 # print(sum(self.idata.MC_tran_matrix[self.stage][self.state][n]*self.theta[n].x for n in range(self.args.N)))
 
-                if(self.stage0 == True):
-                    print(self.model.ObjVal,obj)
-
 
         return self.u,self.v,obj,staging_area_expand_cost,inventory_expand_cost,replenmship_cost,Shortage_cost,acquire_cost,holding_cost
 
@@ -927,15 +924,10 @@ class solve_SDDP:
         state = self.initial_state
 
         for stage in range(args.T):
-            next_state = np.random.choice(args.N, 1, self.idata.MC_tran_matrix[stage][state].tolist)
+            next_state = np.random.choice(args.N, 1, p=self.idata.MC_tran_matrix[stage][state].tolist())
             state = next_state[0]
             path.append(state)
 
-        # for stage in range(args.T):
-        #     state = 5
-        #     path.append(state)
-
-        # print(path)
         return path
 
 
@@ -1140,7 +1132,6 @@ class solve_SDDP:
 
                 path_count = np.zeros((self.args.T+1,self.args.N))
 
-
                 for counts in range(simulate_iter):
 
                     # sample path
@@ -1237,8 +1228,8 @@ class solve_SDDP:
 
                 df.to_csv(f'{filename}.csv', index=False) 
                 print("LB:", LB_temp)
-                print("std_sol:", np.std(solution_total))
-                print("mean_so:", np.mean(solution_total))
+                print("UB std_sol:", np.std(solution_total))
+                print("UB mean_so:", np.mean(solution_total))
                 print("gap:", (np.mean(solution_total) - LB_temp)/np.mean(solution_total))
                 plt.boxplot(solution_total)
                 plt.savefig(f'{filename}.png')

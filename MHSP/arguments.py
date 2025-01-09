@@ -40,8 +40,8 @@ class Arguments:
         self._parser.add_argument('--MAX_ITER', type=int, default=100000, help='Shortage Factor')
         self._parser.add_argument('--time_limit', type=int, default=10800, help='Shortage Factor')
         self._parser.add_argument('--CUTVIOL_MAXITER', type=float, default=100000, help='Shortage Factor')
-        self._parser.add_argument('--STALL', type=int, default=20, help='Shortage Factor')
-        self._parser.add_argument('--LB_TOL', type=float, default=1e-6, help='Shortage Factor')
+        self._parser.add_argument('--STALL', type=int, default=200, help='Shortage Factor')
+        self._parser.add_argument('--LB_TOL', type=float, default=1e-4, help='Shortage Factor')
 
         # Method
         self._parser.add_argument('--Strategic_node_sovling', type=int, default=1, help='0: Extend Formulation 1: Benders Decompostion')
