@@ -8,7 +8,7 @@ from gurobipy import quicksum
 import time
 import pdb
 import sys
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 cut_vio_thred = 1e-4
@@ -924,7 +924,11 @@ class solve_SDDP:
         state = self.initial_state
 
         for stage in range(args.T):
-            next_state = np.random.choice(args.N, 1, p=self.idata.MC_tran_matrix[stage][state].tolist())
+            if(self.args.evaluate_switch == True or self.args.sample_path == "MC"):
+                next_state = np.random.choice(args.N, 1, p=self.idata.MC_tran_matrix[stage][state].tolist())
+            else:
+                next_state = np.random.choice(args.N, 1)
+                # print("sample_path")
             state = next_state[0]
             path.append(state)
 
@@ -1228,12 +1232,12 @@ class solve_SDDP:
 
                 df.to_csv(f'{filename}.csv', index=False) 
                 print("LB:", LB_temp)
-                print("UB std_sol:", np.std(solution_total))
                 print("UB mean_so:", np.mean(solution_total))
+                print("UB std_sol:", np.std(solution_total))
                 print("gap:", (np.mean(solution_total) - LB_temp)/np.mean(solution_total))
-                plt.boxplot(solution_total)
-                plt.savefig(f'{filename}.png')
-                plt.close()
+                # plt.boxplot(solution_total)
+                # plt.savefig(f'{filename}.png')
+                # plt.close()
                 np.save(f'{filename}.npy', solution_total) 
 
 

@@ -96,9 +96,10 @@ class Arguments:
         self._parser.add_argument('--Policy', type=str, default='', help='Policy')
 
         # Scale Down Factor
-        self._parser.add_argument('--sc', type=float, default='0.001', help='Scale Down Factor')
+        self._parser.add_argument('--sc', type=float, default='1', help='Scale Down Factor')
 
-
+        # Scale Down Factor
+        self._parser.add_argument('--sample_path', type=str, default='MC', help='sample path')
 
 
 

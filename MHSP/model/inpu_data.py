@@ -154,7 +154,9 @@ class input_data_class:
         time_taken = end_time - start_time
         print("Parameters loaded.",time_taken,"secs.")
 
+        print("-------------Info -----------------------")
         print("# of Stage:", args.T, "# of state:", args.N)
-
+        if(args.Model == "SDDP"):
+            print("Sample Method of SDDP", args.sample_path)
 
         # pdb.set_trace()
