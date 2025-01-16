@@ -156,7 +156,7 @@ class input_data_class:
 
         print("-------------Info -----------------------")
         print("# of Stage:", args.T, "# of state:", args.N)
-        if(args.Model == "SDDP"):
+        if(args.Model == "SDDP" or "RS_SDDP"):
             print("Sample Method of SDDP", args.sample_path)
 
         # pdb.set_trace()

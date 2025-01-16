@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import gurobipy as gp
 from gurobipy import GRB
-from model import MHSP_extend, MHSP_Benders, inpu_data, scenariotree, MHSP_SDDP
+from model import MHSP_extend, MHSP_Benders, inpu_data, scenariotree, MHSP_SDDP, MHSP_RS_SDDP
 from model import scenariotree
 import time
 
@@ -13,6 +13,8 @@ if __name__ == '__main__':
 
     args = Arguments().parser().parse_args()
     input_data = inpu_data.input_data_class(args)
+
+    print("Model:",args.Model)
 
     start_time = time.time()
     if(args.Model == "Extend"):
@@ -34,8 +36,14 @@ if __name__ == '__main__':
         end_time_setup = time.time()
         print("Model set up time:", end_time_setup-start_time_setup)
         MHSP_SDDP.run()
+    elif(args.Model == "MHSP_RS_SDDP"):
+        print("Review Interval:",args.R)
+        start_time_setup = time.time()
+        MHSP_RS_SDDP = MHSP_RS_SDDP.solve_SDDP(args, input_data)
+        end_time_setup = time.time()
+        print("Model set up time:", end_time_setup-start_time_setup)
+        MHSP_RS_SDDP.run()
     end_time = time.time()
-    print("Model:",args.Model)
     time_taken = end_time - start_time
     print(f"Time taken: {time_taken:.4f} seconds")
 

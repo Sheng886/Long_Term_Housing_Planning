@@ -115,11 +115,18 @@ class subporblem():
             for w in range(args.W):
                 self.k_Staging_Capacity_cons[m][w].setAttr(GRB.Attr.RHS, u_vals[n,w].x)
 
+        pdb.set_trace()
+
         # Satify Demand Flow
         for m in range(1,args.M+1):
             for j in range(args.J):
                 for g in range(args.G):
-                    self.l_Demand_Flow_cons[m][j][g].setAttr(GRB.Attr.RHS, self.tree[n].demand[k][m][j][g])
+                    if(args.Policy == "avg"):
+                        self.l_Demand_Flow_cons[m][j][g].setAttr(GRB.Attr.RHS, self.tree[n].demand[k][m][j][g])
+                    else:
+                        self.l_Demand_Flow_cons[m][j][g].setAttr(GRB.Attr.RHS, self.tree[n].demand[k][m][j][g])
+
+
 
         # Assumption Replensih by MHS
         for w in range(args.W):
@@ -172,8 +179,6 @@ class subporblem():
         return pi_f,pi_i,pi_k,pi_l,pi_m,self.sub.ObjVal
 
 
-
-
 class Benders():
     def __init__(self, args, input_data, subporblem):
 
@@ -188,6 +193,9 @@ class Benders():
         self.sub = subporblem
 
         self.master = gp.Model("MHSP_master")
+
+        if(args.Policy == "avg"):
+            args.K = 1 
 
         # Stage variable
         self.u = self.master.addVars(args.TN, args.W, lb=0.0, vtype=GRB.CONTINUOUS, name='unw')
@@ -312,6 +320,9 @@ class Benders():
                 print("iteration:", itr, "LB/UB:", self.LB,self.UB)
 
             itr = itr+1
+
+        end = time.time() 
+        print("time:", end-start)
                 
         simulate_iter = 1000
         solution_total = np.zeros((simulate_iter))

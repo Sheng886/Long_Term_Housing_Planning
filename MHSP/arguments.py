@@ -99,7 +99,10 @@ class Arguments:
         self._parser.add_argument('--sc', type=float, default='1', help='Scale Down Factor')
 
         # Scale Down Factor
-        self._parser.add_argument('--sample_path', type=str, default='MC', help='sample path')
+        self._parser.add_argument('--sample_path', type=str, default='MC', help='sample path method')
+
+        # RS Policy
+        self._parser.add_argument('--R', type=int, default='1', help='reviewed interval')
 
 
 

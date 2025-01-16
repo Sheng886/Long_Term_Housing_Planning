@@ -64,7 +64,24 @@ class subproblem:
             for i in range(args.I):
                  self.prod_cap_cons[m][i] = self.sub.addConstr(self.bk[m,i] <= self.idata.B_i[i])
 
+        #############-------------RS Policy-------------#############
+        # RS
+        for m in range(args.M+1):
+            for i in range(args.I):
+                for w in range(args.W):
+                    if(m%args.R != 0):
+                        self.sub.addConstr(self.ak[m,i,w,p] for p in range(args.P) == 0)
 
+        # RS
+        # Dual
+        # RHS
+        self.RSS_cons = [[[0  for p in range(args.P)] for w in range(args.W)] for m in range(0,args.M+1,args.R)]
+        for m in range(0,args.M+1,args.R):
+            for w in range(args.W):
+                for p in range(args.P):
+                    self.RSS_cons[m][w][p] = self.sub.addConstr(quicksum(self.ak[m,i,w,p] for i in range(args.I)) + self.vk[m,w,p] == 0)
+
+        
         # Staging Area Constraints
         # Dual
         # rhs
@@ -135,6 +152,13 @@ class subproblem:
                 # print(v[w,p].x)
 
 
+        
+        for m in range(0,self.args.M+1,self.args.R):
+            for w in range(self.args.W):
+                for p in range(self.args.P):
+                    self.RSS_cons[m][w][p].setAttr(GRB.Attr.RHS, v[w,p].x)
+
+
 
         self.sub.update()
         self.sub.setParam("OutputFlag", 0)
@@ -145,6 +169,7 @@ class subproblem:
         pi_8g = np.zeros((self.args.M+1, self.args.W))
         pi_8h = np.zeros((self.args.M+1, self.args.J, self.args.G))
         pi_8i = np.zeros((self.args.W, self.args.P))
+        pi_RS = np.zeros((int(self.args.M+1/self.args.R)+1, self.args.W, self.args.P))
 
         temp = 0
 
@@ -180,6 +205,13 @@ class subproblem:
                 pi_8i[w][p] = self.MHSP_assu_cons[w][p].pi
                 temp = temp + self.MHSP_assu_cons[w][p].pi*v[w,p].x
 
+
+        for m in range(0,self.args.M+1,self.args.R):
+            for w in range(self.args.W):
+                for p in range(self.args.P):
+                    pi_RS[m][w][p] = self.RSS_cons[m][w][p].pi
+                    temp = temp + self.RSS_cons[m][w][p].pi*v[w,p].x
+
         if(abs(temp-self.sub.ObjVal) >= 1e-3):
             print("Subproblem problematic dual solution!")
             print("temp:",temp)
@@ -197,7 +229,7 @@ class subproblem:
             acquire_cost =  sum( sum(self.idata.O_p[p]*self.ak[m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for p in range(self.args.P)) for m in range(self.args.M+1))
 
 
-        return pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,self.sub.ObjVal,replenmship_cost,Shortage_cost,acquire_cost
+        return pi_RS,pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,self.sub.ObjVal,replenmship_cost,Shortage_cost,acquire_cost
 
 class StageProblem_Decomposition:
     """A data structure that keeps stage-wise problems"""
@@ -266,18 +298,6 @@ class StageProblem_Decomposition:
 
             # Staging Area Capacity >= Invenotry Level
             self.model.addConstr(quicksum(self.v[w,p] for p in range(args.P)) <= self.u[w])
-
-
-        if(args.Policy == "WS"):
-            for w in range(args.W):
-                self.model.addConstr(self.u[w] == 0)
-        elif(args.Policy == "avg"):
-            if stage0 != True:
-                for w in range(args.W):
-                    self.model.addConstr(self.y[w] == 0)
-                    for p in range(args.P):
-                        self.model.addConstr(self.x[w,p] == 0 )
-                        self.model.addConstr(self.z[w,p] == 0)
 
 
 
@@ -352,15 +372,16 @@ class StageProblem_Decomposition:
             pi_8g = np.zeros((self.args.K, self.args.M+1, self.args.W))
             pi_8h = np.zeros((self.args.K, self.args.M+1, self.args.J, self.args.G))
             pi_8i = np.zeros((self.args.K, self.args.W, self.args.P))
+            pi_RS = np.zeros((self.args.K,int((self.args.M+1)/self.args.R)+1, self.args.W, self.args.P))
             sub_opt = np.zeros((self.args.K))
 
             sub_opt_total = 0
 
             for k in range(self.args.K):
                 if(self.stage0 == False):
-                    pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k],temp1,temp2,temp3 = self.sub.run(self.u,self.v,self.idata.demand[self.state][k])
+                    pi_RS[k],pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k],temp1,temp2,temp3 = self.sub.run(self.u,self.v,self.idata.demand[self.state][k])
                 else:
-                    pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k],temp1,temp2,temp3 = self.sub.run(self.u,self.v,self.idata.demand[self.args.initial_state][k])
+                    pi_RS[k],pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k],temp1,temp2,temp3 = self.sub.run(self.u,self.v,self.idata.demand[self.args.initial_state][k])
                 sub_opt_total = sub_opt_total + sub_opt
 
             sub_opt_total = (1/self.args.K)*sum(sub_opt[k] for k in range(self.args.K))
@@ -393,6 +414,7 @@ class StageProblem_Decomposition:
                                                                                       +quicksum(pi_8g[k][m][w]*self.u[w] for m in range(self.args.M+1) for w in range(self.args.W))
                                                                                       +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                                       +quicksum(pi_8i[k][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
+                                                                                      +quicksum(pi_RS[k][m][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P) for m in range(0,self.args.M+1,self.args.R))
                                                                                       for k in range(self.args.K)))
 
                     temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
@@ -407,6 +429,7 @@ class StageProblem_Decomposition:
                                                                                       +quicksum(pi_8g[k][m][w]*self.u[w] for m in range(self.args.M+1) for w in range(self.args.W))
                                                                                       +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.args.initial_state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                                       +quicksum(pi_8i[k][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
+                                                                                      +quicksum(pi_RS[k][m][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P) for m in range(0,self.args.M+1,self.args.R))
                                                                                       for k in range(self.args.K)))
 
                     temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.args.initial_state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
@@ -443,7 +466,7 @@ class StageProblem_Decomposition:
             if(self.last_stage == False):
                 obj = self.model.ObjVal - sum(self.idata.MC_tran_matrix[self.stage][self.state][n]*self.theta[n].x for n in range(self.args.N)) 
 
-        return self.u,self.v,obj, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i, staging_area_expand_cost_temp, inventory_expand_cost_temp,holding_cost_temp
+        return self.u,self.v,obj,pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i, staging_area_expand_cost_temp, inventory_expand_cost_temp,holding_cost_temp
 
     def backward_run(self,iter):
 
@@ -522,7 +545,7 @@ class StageProblem_Decomposition:
 
         return temp_cut_itr
 
-    def add_Benders_cut_shraing(self, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i):
+    def add_Benders_cut_shraing(self, pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i):
 
         if(self.stage0 == False):
             temp_constraint = self.model.addConstr(self.phi >= (1/self.args.K)*quicksum(quicksum(self.v[w,p]*pi_8b[k][w][p] for w in range(self.args.W) for p in range(self.args.P))
@@ -530,6 +553,7 @@ class StageProblem_Decomposition:
                                                                               +quicksum(pi_8g[k][m][w]*self.u[w] for m in range(self.args.M+1) for w in range(self.args.W))
                                                                               +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                               +quicksum(pi_8i[k][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
+                                                                              +quicksum(pi_RS[k][m][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P) for m in range(0,self.args.M+1,self.args.R))
                                                                               for k in range(self.args.K)))
 
             temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
@@ -544,7 +568,8 @@ class StageProblem_Decomposition:
                                                                               +quicksum(pi_8g[k][m][w]*self.u[w] for m in range(self.args.M+1) for w in range(self.args.W))
                                                                               +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.args.initial_state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                               +quicksum(pi_8i[k][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
-                                                                              for k in range(self.args.K)))
+                                                                              +quicksum(pi_RS[k][m][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P) for m in range(0,self.args.M+1,self.args.R))
+                                                                              or k in range(self.args.K)))
 
             temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.args.initial_state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
             temp_rhs = temp_rhs + (1/self.args.K)*sum(self.idata.B_i[i]*pi_8e[k][m][i] for m in range(self.args.M+1) for i in range(self.args.I) for k in range(self.args.K))
@@ -628,19 +653,6 @@ class StageProblem_extended:
             # Staging Area Capacity >= Invenotry Level
             self.model.addConstr(quicksum(self.v[w,p] for p in range(args.P)) <= self.u[w])
 
-
-        if(args.Policy == "WS"):
-            for w in range(args.W):
-                self.model.addConstr(self.u[w] == 0)
-        elif(args.Policy == "avg"):
-            if stage0 != True:
-                for w in range(args.W):
-                    self.model.addConstr(self.y[w] == 0)
-                    for p in range(args.P):
-                        self.model.addConstr(self.x[w,p] == 0 )
-                        self.model.addConstr(self.z[w,p] == 0)
-
-
         # Invenory Level
         # Dual
         # Receive self.v[parent_node,w,p]
@@ -690,6 +702,26 @@ class StageProblem_extended:
                     self.model.addConstr(quicksum(self.vk[k,m,w,p] for p in range(args.P)) <= self.u[w])
 
 
+        #############-------------RS Policy-------------#############
+        # RS
+        for k in range(args.K):
+            for m in range(args.M+1):
+                for i in range(args.I):
+                    for w in range(args.W):
+                        for p in range(args.P):
+                            if(m%int(args.R) != 0):
+                                self.model.addConstr(self.ak[k,m,i,w,p] == 0)
+
+        # RS
+        # Dual
+        # RHS
+        for k in range(args.K):
+            for m in range(0,args.M+1,args.R):
+                for w in range(args.W):
+                    for p in range(args.P):
+                        self.model.addConstr(quicksum(self.ak[k,m,i,w,p] for i in range(args.I)) + self.vk[k,m,w,p] == self.v[w,p])
+
+        # pdb.set_trace()
         # Delviery Flow
         for k in range(args.K):
             for m in range(1,args.M+1):
@@ -906,17 +938,6 @@ class solve_SDDP:
         self.args = args
         self.idata = input_data
 
-        if(args.Policy == "baseline"):
-            self.demnad = self.idata.demand
-            args.K = 1
-            for state in range(args.N):
-                for m in range(args.M):
-                    for j in range(args.J):
-                        for g in range(args.G):
-                            temp_avg = np.mean(self.idata.demand[state, :, m, j, g], axis=0)
-                            for k in range(args.K):
-                                self.idata.demand[state][k][m][j][g] = temp_avg 
-
         if(args.Strategic_node_sovling == 0):
             self.stage_root = StageProblem_extended(args,input_data,args.initial_state,0,stage0=True)
             self.stage = [[StageProblem_extended(args,input_data,n,t,stage0=False) for n in range(args.N)] for t in range(args.T-1)] 
@@ -967,15 +988,15 @@ class solve_SDDP:
                     print("the LB is not making significant progress", "stop at iteration", iter)
         return flag, Elapsed
 
-    def Benders_cut_shraing(self,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,root=False,leaf=False,state=None,stage=None):
+    def Benders_cut_shraing(self, pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,root=False,leaf=False,state=None,stage=None):
 
         if(root == True):
             for stage_add_Benders_cut in range(self.args.T-1):
                 for state_add_Benders_cut in range(self.args.N):
-                    self.stage[stage_add_Benders_cut][state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+                    self.stage[stage_add_Benders_cut][state_add_Benders_cut].add_Benders_cut_shraing(pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
             for state_add_Benders_cut in range(self.args.N):
-                self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+                self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
         elif(leaf == True):
             # self.stage_root.add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
@@ -986,7 +1007,7 @@ class solve_SDDP:
 
             for state_add_Benders_cut in range(self.args.N):
                 if(state != state_add_Benders_cut):
-                    self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+                    self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
         
         else:
             # self.stage_root.add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
@@ -995,10 +1016,10 @@ class solve_SDDP:
                 for state_add_Benders_cut in range(self.args.N):
                     if(state_add_Benders_cut != state and stage_add_Benders_cut>= stage):
                         # print("stage/state:",stage_add_Benders_cut,state_add_Benders_cut)
-                        self.stage[stage_add_Benders_cut][state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+                        self.stage[stage_add_Benders_cut][state_add_Benders_cut].add_Benders_cut_shraing(pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
             for state_add_Benders_cut in range(self.args.N):
-                self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+                self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
 
     def run(self):
@@ -1025,14 +1046,14 @@ class solve_SDDP:
 
             # ---------------------------------------------------- Forward ----------------------------------------------------
             if(self.args.Strategic_node_sovling == 0):
-                u,v,obj_ex,temp1,temp2,temp3,temp4,temp5,temp6 = self.stage_root.forward_run()
+                u, v, obj_ex, temp1,temp2,temp3,temp4,temp5,temp6 = self.stage_root.forward_run()
             elif(self.args.Strategic_node_sovling == 1):
-                u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,temp1,temp2,temp3 = self.stage_root.forward_run()
+                u, v, obj_ex, pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,temp1,temp2,temp3 = self.stage_root.forward_run()
 
                 # print("1111")
 
                 # Benders Cut Sharing
-                self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,root=True)
+                self.Benders_cut_shraing(pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i, root=True)
 
                 # print("22222")
 
@@ -1046,20 +1067,20 @@ class solve_SDDP:
                 if(self.args.Strategic_node_sovling == 0):
                     u,v,obj_ex,temp1,temp2,temp3,temp4,temp5,temp6 = self.stage[stage][sample_path[stage]].forward_run(u,v)
                 elif(self.args.Strategic_node_sovling == 1):
-                    u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,temp1,temp2,temp3 = self.stage[stage][sample_path[stage]].forward_run(u,v)
+                    u,v,obj_ex,pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,temp1,temp2,temp3 = self.stage[stage][sample_path[stage]].forward_run(u,v)
                     
                     # Benders Cut Sharing
-                    self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,state=sample_path[stage],stage=stage)
+                    self.Benders_cut_shraing(pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,state=sample_path[stage],stage=stage)
 
                 # LB_temp = obj_ex + LB_temp
             
             if(self.args.Strategic_node_sovling == 0):
                 u,v,obj_ex,temp1,temp2,temp3,temp4,temp5,temp6 = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
             elif(self.args.Strategic_node_sovling == 1):
-                u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,temp1,temp2,temp3 = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
+                u, v, obj_ex, pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,temp1,temp2,temp3 = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
                 
                 # Benders Cut Sharing
-                self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,leaf=True,state=sample_path[self.args.T-1])
+                self.Benders_cut_shraing(pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,leaf=True,state=sample_path[self.args.T-1])
 
             # LB_temp = obj_ex + LB_temp
 
@@ -1147,19 +1168,6 @@ class solve_SDDP:
 
                 path_count = np.zeros((self.args.T+1,self.args.N))
 
-                if(args.Policy == "baseline"):
-
-                    for k in range(args.K):
-
-                        self.stage_root.k_demand[k] = self.demnad[self.args.initial_state][k]
-
-                        for stage in range(args.T):
-                            for state in range(args.N):
-                                self.stage[stage][stage].k_demand[k] = self.demnad[state][k]
-
-                        for state in range(args.N):
-                            self.stage_leaf[state].k_demand[k] = self.demnad[state][k]
-
                 for counts in range(simulate_iter):
 
                     # sample path
@@ -1180,9 +1188,9 @@ class solve_SDDP:
                         u,v,obj_ex,staging_area_expand_cost_temp,inventory_expand_cost_temp,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp,holdings_cost_temp = self.stage_root.forward_run()
 
                     elif(self.args.Strategic_node_sovling == 1):
-                        u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,staging_area_expand_cost_temp,inventory_expand_cost_temp,holdings_cost_temp = self.stage_root.forward_run()
+                        u,v,obj_ex, pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,staging_area_expand_cost_temp,inventory_expand_cost_temp,holdings_cost_temp = self.stage_root.forward_run()
                         for k in range(self.args.K):
-                            pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage_root.sub.run(u,v,self.idata.demand[self.args.initial_state][k])
+                            pi_RS,pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage_root.sub.run(u,v,self.idata.demand[self.args.initial_state][k])
 
                     solution_u[0][self.args.initial_state] += sum(u[w].x for w in range(self.args.W))
                     solution_v[0][self.args.initial_state] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
@@ -1201,9 +1209,9 @@ class solve_SDDP:
                         if(self.args.Strategic_node_sovling == 0):
                             u,v,obj_ex,staging_area_expand_cost_temp,inventory_expand_cost_temp,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp,holdings_cost_temp = self.stage[stage][sample_path[stage]].forward_run(u,v)
                         elif(self.args.Strategic_node_sovling == 1):
-                            u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,staging_area_expand_cost_temp,inventory_expand_cost_temp,holdings_cost_temp = self.stage[stage][sample_path[stage]].forward_run(u,v)
+                            u,v,obj_ex, pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,staging_area_expand_cost_temp,inventory_expand_cost_temp,holdings_cost_temp = self.stage[stage][sample_path[stage]].forward_run(u,v)
                             for k in range(self.args.K):
-                                pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage[stage][sample_path[stage]].sub.run(u,v,self.idata.demand[sample_path[stage]][k])
+                                pi_RS,pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage[stage][sample_path[stage]].sub.run(u,v,self.idata.demand[sample_path[stage]][k])
                         
                         solution_u[stage+1][sample_path[stage]] += sum(u[w].x for w in range(self.args.W))
                         solution_v[stage+1][sample_path[stage]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
@@ -1220,9 +1228,9 @@ class solve_SDDP:
                     if(self.args.Strategic_node_sovling == 0):
                         u,v,obj_ex,staging_area_expand_cost_temp,inventory_expand_cost_temp,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp,holdings_cost_temp = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
                     elif(self.args.Strategic_node_sovling == 1):
-                        u,v,obj_ex,pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,staging_area_expand_cost_temp,inventory_expand_cost_temp,holdings_cost_temp = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
+                        u,v,obj_ex, pi_RS, pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,staging_area_expand_cost_temp,inventory_expand_cost_temp,holdings_cost_temp = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
                         for k in range(self.args.K):
-                                pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage_leaf[sample_path[self.args.T-1]].sub.run(u,v,self.idata.demand[sample_path[stage]][k])
+                                pi_RS,pi_8b,pi_8e,pi_8g,pi_8h,pi_8i,sub_opt,replenmship_cost_temp,Shortage_cost_temp,acquire_cost_temp = self.stage_leaf[sample_path[self.args.T-1]].sub.run(u,v,self.idata.demand[sample_path[stage]][k])
                         
                     solution_u[self.args.T][sample_path[self.args.T-1]] += sum(u[w].x for w in range(self.args.W))
                     solution_v[self.args.T][sample_path[self.args.T-1]] += sum(v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
