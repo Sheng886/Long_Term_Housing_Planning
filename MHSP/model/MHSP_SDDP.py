@@ -1147,18 +1147,29 @@ class solve_SDDP:
 
                 path_count = np.zeros((self.args.T+1,self.args.N))
 
-                if(args.Policy == "baseline"):
+                if(self.args.Policy == "baseline"):
 
-                    for k in range(args.K):
+                    for k in range(self.args.K):
+                        for m in range(1,self.args.M+1):
+                            for j in range(self.args.J):
+                                for g in range(self.args.G):
+                                    self.stage_root.k_demand[k][m][j][g].setAttr(GRB.Attr.RHS, self.demnad[self.args.initial_state][k][m][j][g])
 
-                        self.stage_root.k_demand[k] = self.demnad[self.args.initial_state][k]
 
-                        for stage in range(args.T):
-                            for state in range(args.N):
-                                self.stage[stage][stage].k_demand[k] = self.demnad[state][k]
+                    for stage in range(self.args.T-1):
+                        for state in range(self.args.N):
+                            for k in range(self.args.K):
+                                for m in range(1,self.args.M+1):
+                                    for j in range(self.args.J):
+                                        for g in range(self.args.G):
+                                            self.stage[stage][state].k_demand[k][m][j][g].setAttr(GRB.Attr.RHS, self.demnad[state][k][m][j][g])
 
-                        for state in range(args.N):
-                            self.stage_leaf[state].k_demand[k] = self.demnad[state][k]
+                    for state in range(self.args.N):
+                            for k in range(self.args.K):
+                                for m in range(1,self.args.M+1):
+                                    for j in range(self.args.J):
+                                        for g in range(self.args.G):
+                                            self.stage_leaf[state].k_demand[k][m][j][g].setAttr(GRB.Attr.RHS, self.demnad[state][k][m][j][g])
 
                 for counts in range(simulate_iter):
 
