@@ -69,17 +69,21 @@ class subproblem:
         for m in range(args.M+1):
             for i in range(args.I):
                 for w in range(args.W):
-                    if(m%args.R != 0):
-                        self.sub.addConstr(self.ak[m,i,w,p] for p in range(args.P) == 0)
+                    for p in range(args.P):
+                        if(m%int(args.R) != 0):
+                            self.sub.addConstr(self.ak[m,i,w,p]  == 0)
 
         # RS
         # Dual
         # RHS
-        self.RSS_cons = [[[0  for p in range(args.P)] for w in range(args.W)] for m in range(0,args.M+1,args.R)]
+        temp = int((self.args.M+1)/self.args.R)+1
+        self.RSS_cons = [[[0  for p in range(args.P)] for w in range(args.W)] for m in range(temp)]
+        temp_m=0
         for m in range(0,args.M+1,args.R):
             for w in range(args.W):
                 for p in range(args.P):
-                    self.RSS_cons[m][w][p] = self.sub.addConstr(quicksum(self.ak[m,i,w,p] for i in range(args.I)) + self.vk[m,w,p] == 0)
+                    self.RSS_cons[temp_m][w][p] = self.sub.addConstr(quicksum(self.ak[m,i,w,p] for i in range(args.I)) + self.vk[m,w,p] == 0)
+            temp_m = temp_m + 1
 
         
         # Staging Area Constraints
@@ -152,11 +156,12 @@ class subproblem:
                 # print(v[w,p].x)
 
 
-        
+        temp_m=0
         for m in range(0,self.args.M+1,self.args.R):
             for w in range(self.args.W):
                 for p in range(self.args.P):
-                    self.RSS_cons[m][w][p].setAttr(GRB.Attr.RHS, v[w,p].x)
+                    self.RSS_cons[temp_m][w][p].setAttr(GRB.Attr.RHS, v[w,p].x)
+            temp_m = temp_m + 1 
 
 
 
@@ -169,8 +174,9 @@ class subproblem:
         pi_8g = np.zeros((self.args.M+1, self.args.W))
         pi_8h = np.zeros((self.args.M+1, self.args.J, self.args.G))
         pi_8i = np.zeros((self.args.W, self.args.P))
-        pi_RS = np.zeros((int(self.args.M+1/self.args.R)+1, self.args.W, self.args.P))
-
+        temp = (int((self.args.M+1)/self.args.R)+1)
+        pi_RS = np.zeros((temp, self.args.W, self.args.P))
+        
         temp = 0
 
         # Initial Inventory Level in Short-term
@@ -206,11 +212,13 @@ class subproblem:
                 temp = temp + self.MHSP_assu_cons[w][p].pi*v[w,p].x
 
 
+        temp_m = 0
         for m in range(0,self.args.M+1,self.args.R):
             for w in range(self.args.W):
                 for p in range(self.args.P):
-                    pi_RS[m][w][p] = self.RSS_cons[m][w][p].pi
-                    temp = temp + self.RSS_cons[m][w][p].pi*v[w,p].x
+                    pi_RS[temp_m][w][p] = self.RSS_cons[temp_m][w][p].pi
+                    temp = temp + self.RSS_cons[temp_m][w][p].pi*v[w,p].x
+            temp_m = temp_m + 1
 
         if(abs(temp-self.sub.ObjVal) >= 1e-3):
             print("Subproblem problematic dual solution!")
@@ -414,7 +422,7 @@ class StageProblem_Decomposition:
                                                                                       +quicksum(pi_8g[k][m][w]*self.u[w] for m in range(self.args.M+1) for w in range(self.args.W))
                                                                                       +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                                       +quicksum(pi_8i[k][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
-                                                                                      +quicksum(pi_RS[k][m][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P) for m in range(0,self.args.M+1,self.args.R))
+                                                                                      +quicksum(pi_RS[k][m][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P) for m in range((int((self.args.M+1)/self.args.R)+1)))
                                                                                       for k in range(self.args.K)))
 
                     temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
@@ -429,7 +437,7 @@ class StageProblem_Decomposition:
                                                                                       +quicksum(pi_8g[k][m][w]*self.u[w] for m in range(self.args.M+1) for w in range(self.args.W))
                                                                                       +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.args.initial_state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                                       +quicksum(pi_8i[k][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
-                                                                                      +quicksum(pi_RS[k][m][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P) for m in range(0,self.args.M+1,self.args.R))
+                                                                                      +quicksum(pi_RS[k][m][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P) for m in range((int((self.args.M+1)/self.args.R)+1)))
                                                                                       for k in range(self.args.K)))
 
                     temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.args.initial_state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
@@ -553,7 +561,7 @@ class StageProblem_Decomposition:
                                                                               +quicksum(pi_8g[k][m][w]*self.u[w] for m in range(self.args.M+1) for w in range(self.args.W))
                                                                               +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                               +quicksum(pi_8i[k][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
-                                                                              +quicksum(pi_RS[k][m][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P) for m in range(0,self.args.M+1,self.args.R))
+                                                                              +quicksum(pi_RS[k][m][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P) for m in range((int((self.args.M+1)/self.args.R)+1)))
                                                                               for k in range(self.args.K)))
 
             temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
@@ -568,7 +576,7 @@ class StageProblem_Decomposition:
                                                                               +quicksum(pi_8g[k][m][w]*self.u[w] for m in range(self.args.M+1) for w in range(self.args.W))
                                                                               +quicksum(pi_8h[k][m][j][g]*self.idata.demand[self.args.initial_state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G))
                                                                               +quicksum(pi_8i[k][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
-                                                                              +quicksum(pi_RS[k][m][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P) for m in range(0,self.args.M+1,self.args.R))
+                                                                              +quicksum(pi_RS[k][m][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P) for m in range((int((self.args.M+1)/self.args.R)+1)))
                                                                               or k in range(self.args.K)))
 
             temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.args.initial_state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))

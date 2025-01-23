@@ -270,7 +270,7 @@ class StageProblem_Decomposition:
 
         if(args.Policy == "WS"):
             for w in range(args.W):
-                self.model.addConstr(self.u[w] == 0)
+                self.model.addConstr(self.y[w] == 0)
         elif(args.Policy == "avg"):
             if stage0 != True:
                 for w in range(args.W):
@@ -631,7 +631,7 @@ class StageProblem_extended:
 
         if(args.Policy == "WS"):
             for w in range(args.W):
-                self.model.addConstr(self.u[w] == 0)
+                self.model.addConstr(self.y[w] == 0)
         elif(args.Policy == "avg"):
             if stage0 != True:
                 for w in range(args.W):
@@ -908,7 +908,6 @@ class solve_SDDP:
 
         if(args.Policy == "baseline"):
             self.demnad = self.idata.demand
-            args.K = 1
             for state in range(args.N):
                 for m in range(args.M):
                     for j in range(args.J):
@@ -1165,11 +1164,11 @@ class solve_SDDP:
                                             self.stage[stage][state].k_demand[k][m][j][g].setAttr(GRB.Attr.RHS, self.demnad[state][k][m][j][g])
 
                     for state in range(self.args.N):
-                            for k in range(self.args.K):
-                                for m in range(1,self.args.M+1):
-                                    for j in range(self.args.J):
-                                        for g in range(self.args.G):
-                                            self.stage_leaf[state].k_demand[k][m][j][g].setAttr(GRB.Attr.RHS, self.demnad[state][k][m][j][g])
+                        for k in range(self.args.K):
+                            for m in range(1,self.args.M+1):
+                                for j in range(self.args.J):
+                                    for g in range(self.args.G):
+                                        self.stage_leaf[state].k_demand[k][m][j][g].setAttr(GRB.Attr.RHS, self.demnad[state][k][m][j][g])
 
                 for counts in range(simulate_iter):
 
