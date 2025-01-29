@@ -271,9 +271,6 @@ class StageProblem_Decomposition:
         if(args.Policy == "WS"):
             for w in range(args.W):
                 self.model.addConstr(self.y[w] == 0)
-                for p in range(args.P):
-                        self.model.addConstr(self.x[w,p] == 0 )
-                        self.model.addConstr(self.z[w,p] == 0)
         elif(args.Policy == "avg"):
             if stage0 != True:
                 for w in range(args.W):

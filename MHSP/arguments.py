@@ -51,8 +51,8 @@ class Arguments:
         self._parser.add_argument('--Cost_print', type=bool, default=False, help='0: Extend Formulation 1: Benders Decompostion')
 
         # Demand path
-        self._parser.add_argument('--demand_path', type=str, default='demand_data/Demand_Stage_2_States_6_Study_278_month_6_K_2.csv', help='Demand')
-        self._parser.add_argument('--MC_trans_path', type=str, default='demand_data/MC_trans_Stage_2_States_6.csv', help='MC_trans')
+        self._parser.add_argument('--demand_path', type=str, default='demand_data/Demand_Stage_10_States_6_Study_278_month_6_K_2.csv', help='Demand')
+        self._parser.add_argument('--MC_trans_path', type=str, default='demand_data/MC_trans_Stage_10_States_6.csv', help='MC_trans')
 
 
         # Demand Generator Path
