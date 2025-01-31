@@ -661,6 +661,7 @@ class StageProblem_extended:
 
             # Staging Area Capacity >= Invenotry Level
             self.model.addConstr(quicksum(self.v[w,p] for p in range(args.P)) <= self.u[w])
+            
 
         # Invenory Level
         # Dual
@@ -670,6 +671,7 @@ class StageProblem_extended:
             for p in range(args.P):
                 if stage0 == True:
                     self.model.addConstr(self.v[w,p] == self.x[w,p] - self.z[w,p] + self.idata.II_w[w][p])
+                    self.model.addConstr(self.z[w,p] == 0)
                 else:
                     self.c_inv_level[w][p] = self.model.addConstr(self.v[w,p] - self.x[w,p] + self.z[w,p] ==  0)
 
@@ -679,6 +681,7 @@ class StageProblem_extended:
             for w in range(args.W):
                 for p in range(args.P):
                     self.model.addConstr(self.vk[k,0,w,p] == self.v[w,p])
+                    # self.model.addConstr(self.vk[k,0,w,p] >= 13000)
 
 
 
@@ -842,8 +845,23 @@ class StageProblem_extended:
                     for m in range(0, self.args.M+1):
                         a = sum(self.ak[k,m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for w in range(self.args.P))
                         v = sum(self.vk[k,m,w,p].x for w in range(self.args.W) for w in range(self.args.P))
-                        d = sum(self.idata.demand[self.state][k][m][j][g]for j in range(self.args.J) for g in range(self.args.G))
-                        print(k,m,"v","a","d",v,a,d)
+                        f = sum(self.fk[k,m,w,j,p,g].x for j in range(self.args.J) for w in range(self.args.W) for p in range(self.args.P) for g in range(self.args.G))
+                        d = sum(self.idata.demand[self.state][k][m][j][g] for j in range(self.args.J) for g in range(self.args.G))
+                        s = sum(self.sk[k,m,j,g].x for j in range(self.args.J) for g in range(self.args.G))
+                        print(k,m,"v","a","d","s","f",v,a,d,s,f)
+
+                for k in range(self.args.K):
+                    for m in range(1,self.args.M+1):
+                        for j in range(self.args.J):
+                            for g in range(self.args.G):
+                                d = self.idata.demand[self.state][k][m][j][g]
+                                f = sum(self.fk[k,m,w,j,p,g].x for w in range(self.args.W) for p in range(self.args.P))
+                                s = self.sk[k,m,j,g].x
+                                if(d != f+s):
+                                    print("error")
+                            
+                         
+
                 print(obj)
 
 
