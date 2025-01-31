@@ -1131,7 +1131,7 @@ class solve_SDDP:
                 # pdb.set_trace()
 
                 # ---------------------------------------------------- Polciy Simulation ----------------------------------------------------
-                
+                time_test = time.time()
                 simulate_iter = 1000
                 solution_u = np.zeros((self.args.T+1,self.args.N))
                 solution_v = np.zeros((self.args.T+1,self.args.N))
@@ -1253,6 +1253,7 @@ class solve_SDDP:
 
                 
                 solution = []
+                time_test_end = time.time()
 
 
                 # pdb.set_trace()
@@ -1268,6 +1269,7 @@ class solve_SDDP:
                 filename = str(self.args.Model) + str(self.args.Strategic_node_sovling) + "result_Stage_" + str(self.args.T) + "_States_" + str(self.args.N) + "_Study_" + str(self.args.J) + "_month_" + str(self.args.M)  + "_K_" + str(self.args.K)  + "_Pp_" + str(self.args.P_p_factor) + "_Cu_" + str(self.args.C_u_factor) + "_Ew_" +  str(self.args.E_w_factor) + "_Cpw_" +  str(self.args.Cp_w_factor)  + "_policy_" +  str(self.args.Policy)
 
                 df.to_csv(f'{filename}.csv', index=False) 
+                print("testing_time:", time_test_end-time_test)
                 print("LB:", LB_temp)
                 print("UB mean_so:", np.mean(solution_total))
                 print("UB std_sol:", np.std(solution_total))

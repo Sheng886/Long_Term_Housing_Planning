@@ -115,7 +115,7 @@ class subporblem():
             for w in range(args.W):
                 self.k_Staging_Capacity_cons[m][w].setAttr(GRB.Attr.RHS, u_vals[n,w].x)
 
-        pdb.set_trace()
+        #pdb.set_trace()
 
         # Satify Demand Flow
         for m in range(1,args.M+1):
@@ -276,7 +276,7 @@ class Benders():
         itr = 0
         LB_list = []
 
-        start = time.time() 
+        start_train = time.time() 
 
         # for iter in range(self.args.MAX_ITER):
         while((self.UB - self.LB)/max(abs(self.UB),1e-10) >= self.eps):
@@ -322,7 +322,7 @@ class Benders():
             itr = itr+1
 
         end = time.time() 
-        print("time:", end-start)
+        print("training time:", end-start_train)
                 
         simulate_iter = 1000
         solution_total = np.zeros((simulate_iter))
@@ -334,17 +334,18 @@ class Benders():
             node = 0
             obj = sum(self.idata.E_w[w]*self.y[node,w].x for w in range(args.W)) 
             obj = obj + sum(args.price_strategic*self.idata.O_p[p]*(self.x[node,w,p].x - self.idata.R_p[p]*self.z[node,w,p].x) + self.idata.H_p[p]*self.v[node,w,p].x for w in range(args.W) for p in range(args.P)) 
-            obj = obj + (1/args.K)*quicksum(self.theta[node,k] for k in range(args.K))
+            obj = obj + (1/args.K)*sum(self.theta[node,k].x for k in range(args.K))
 
-            solution_total[counts] = solution_total[counts] + obj
+            # print(obj)
+            solution_total[counts] += obj
             node_pre = node
 
             for state in sample_path:
                 node = node_pre*self.args.N + state + 1
-                print(state,node)
+                # print(state,node)
                 obj = sum(self.idata.E_w[w]*self.y[node,w].x for w in range(args.W)) 
                 obj = obj + sum(args.price_strategic*self.idata.O_p[p]*(self.x[node,w,p].x - self.idata.R_p[p]*self.z[node,w,p].x) + self.idata.H_p[p]*self.v[node,w,p].x for w in range(args.W) for p in range(args.P)) 
-                obj = obj + (1/args.K)*quicksum(self.theta[node,k] for k in range(args.K))
+                obj = obj + (1/args.K)*sum(self.theta[node,k].x for k in range(args.K))
                 solution_total[counts] = solution_total[counts] + obj
                 node_pre = node
 

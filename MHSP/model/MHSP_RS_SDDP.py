@@ -12,6 +12,7 @@ import sys
 
 
 cut_vio_thred = 1e-4
+simulate_iter = 1
 
 class subproblem:
 
@@ -739,8 +740,7 @@ class StageProblem_extended:
                             self.model.addConstr(self.vk[k,m-1,w,p] + quicksum(self.ak[k,m-self.idata.P_p[p],i,w,p] for i in range(args.I)) == self.vk[k,m,w,p] + quicksum(self.fk[k,m,w,j,p,g] for j in range(args.J) for g in range(args.G)))
                         else:
                             self.model.addConstr(self.vk[k,m-1,w,p]  == self.vk[k,m,w,p] + quicksum(self.fk[k,m,w,j,p,g] for j in range(args.J) for g in range(args.G)))
-
-
+                
         
         # Satify Demand Flow
         # Dual
@@ -836,6 +836,16 @@ class StageProblem_extended:
             if(self.last_stage == False):
                 obj = self.model.ObjVal - sum(self.idata.MC_tran_matrix[self.stage][self.state][n]*self.theta[n].x for n in range(self.args.N))
                 # print(sum(self.idata.MC_tran_matrix[self.stage][self.state][n]*self.theta[n].x for n in range(self.args.N)))
+
+            if self.stage0 == True:
+                for k in range(self.args.K):
+                    for m in range(0, self.args.M+1):
+                        a = sum(self.ak[k,m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for w in range(self.args.P))
+                        v = sum(self.vk[k,m,w,p].x for w in range(self.args.W) for w in range(self.args.P))
+                        d = sum(self.idata.demand[self.state][k][m][j][g]for j in range(self.args.J) for g in range(self.args.G))
+                        print(k,m,"v","a","d",v,a,d)
+                print(obj)
+
 
 
         return self.u,self.v,obj,staging_area_expand_cost,inventory_expand_cost,replenmship_cost,Shortage_cost,acquire_cost,holding_cost
@@ -1159,7 +1169,7 @@ class solve_SDDP:
 
                 # ---------------------------------------------------- Polciy Simulation ----------------------------------------------------
                 
-                simulate_iter = 1000
+                
                 solution_u = np.zeros((self.args.T+1,self.args.N))
                 solution_v = np.zeros((self.args.T+1,self.args.N))
                 solution_obj = np.zeros((self.args.T+1,self.args.N))
@@ -1268,7 +1278,7 @@ class solve_SDDP:
                 
                 
                 df = pd.DataFrame(solution, columns=[ 'stage','state','Staging Area Capacity','Inventory Level','obj','staging_area_expand_cost','inventory_expand_cost','replenmship_cost','Shortage_cost','acquire_cost','holding_cost'])
-                filename = str(self.args.Model) + str(self.args.Strategic_node_sovling) + "result_Stage_" + str(self.args.T) + "_States_" + str(self.args.N) + "_Study_" + str(self.args.J) + "_month_" + str(self.args.M)  + "_K_" + str(self.args.K)  + "_Pp_" + str(self.args.P_p_factor) + "_Cu_" + str(self.args.C_u_factor) + "_Ew_" +  str(self.args.E_w_factor) + "_Cpw_" +  str(self.args.Cp_w_factor)  + "_policy_" +  str(self.args.Policy)
+                filename = str(self.args.Model) + str(self.args.Strategic_node_sovling) + "result_Stage_" + str(self.args.T) + "_States_" + str(self.args.N) + "_Study_" + str(self.args.J) + "_month_" + str(self.args.M)  + "_K_" + str(self.args.K)  + "_Pp_" + str(self.args.P_p_factor) + "_Cu_" + str(self.args.C_u_factor) + "_Ew_" +  str(self.args.E_w_factor) + "_Cpw_" +  str(self.args.Cp_w_factor)  + "_policy_" +  str(self.args.Policy) + "_R_" +  str(self.args.R)
 
                 df.to_csv(f'{filename}.csv', index=False) 
                 print("LB:", LB_temp)

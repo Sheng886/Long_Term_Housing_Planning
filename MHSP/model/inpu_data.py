@@ -183,4 +183,13 @@ class input_data_class:
         if(args.Model == "SDDP" or "RS_SDDP"):
             print("Sample Method of SDDP", args.sample_path)
 
+        # for m in range(args.M+1):
+        #     if(m%int(args.R) != 0):
+        #         print("X",m)
+
+        # for m in range(0,args.M+1,args.R):
+        #     print("O",m)
+
+
+
         # pdb.set_trace()
