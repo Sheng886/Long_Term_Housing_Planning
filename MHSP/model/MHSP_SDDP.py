@@ -31,7 +31,7 @@ class subproblem:
         self.bbk = self.sub.addVars(args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='bbktwp')
 
         
-        self.sub.setObjective(quicksum(self.idata.O_p[p]*self.aak[w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p] for w in range(args.W) for p in range(args.P)) 
+        self.sub.setObjective(quicksum(args.price_strategic*self.idata.O_p[p]*self.aak[w,p] - args.price_strategic*self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p] for w in range(args.W) for p in range(args.P)) 
                               + quicksum(quicksum(self.idata.O_p[p]*self.ak[m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                        + quicksum(self.idata.CU_g[g]*self.sk[m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)), GRB.MINIMIZE);
 
@@ -192,7 +192,7 @@ class subproblem:
         acquire_cost = 0
 
         if(self.args.evaluate_switch == True):
-            replenmship_cost = sum(self.idata.O_p[p]*self.aak[w,p].x - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+            replenmship_cost = sum(self.args.price_strategic*self.idata.O_p[p]*self.aak[w,p].x - self.args.price_strategic*self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p].x for w in range(self.args.W) for p in range(self.args.P))
             Shortage_cost =  sum(sum(self.idata.CU_g[g]*self.sk[m,j,g].x for j in range(self.args.J) for g in range(self.args.G)) for m in range(self.args.M+1))
             acquire_cost =  sum( sum(self.idata.O_p[p]*self.ak[m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for p in range(self.args.P)) for m in range(self.args.M+1))
 
@@ -474,6 +474,7 @@ class StageProblem_Decomposition:
         Benders_cut_pi = 0
 
         # Cut
+        print(self.cut ,self.cut_rhs)
         if(self.cut):
             # print(self.stage,self.state)
             for c in range(len(self.cut_rhs)):
@@ -603,7 +604,7 @@ class StageProblem_extended:
         if(last_stage == False):
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
                                   + quicksum(args.price_strategic*self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
-                                  + (1/args.K)*quicksum(quicksum(self.idata.O_p[p]*self.aak[k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
+                                  + (1/args.K)*quicksum(quicksum(args.price_strategic*self.idata.O_p[p]*self.aak[k,w,p] - args.price_strategic*self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
                                                       + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                                                 + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)) for k in range(args.K))
                                   + quicksum(self.idata.MC_tran_matrix[self.stage][state][n]*self.theta[n] for n in range(args.N)) 
@@ -611,7 +612,7 @@ class StageProblem_extended:
         else:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
                                   + quicksum(args.price_strategic*self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
-                                  + (1/args.K)*quicksum(quicksum(self.idata.O_p[p]*self.aak[k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
+                                  + (1/args.K)*quicksum(quicksum(args.price_strategic*self.idata.O_p[p]*self.aak[k,w,p] - args.price_strategic*self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
                                                       + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                                                 + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)) for k in range(args.K))
                                 , GRB.MINIMIZE);
@@ -765,15 +766,6 @@ class StageProblem_extended:
                 self.x_value[w][p] = self.x[w,p].x
                 self.z_value[w][p] = self.z[w,p].x
 
-        if(self.args.Cost_print == True):
-            print("Extend Strategic Node Cost:", self.model.ObjVal)
-            print("Extend Second-stage Cost:", (1/self.args.K)*sum(quicksum(self.idata.O_p[p]*self.aak[k,w,p].x - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p].x for w in range(self.args.W) for p in range(self.args.P)) 
-                                                          + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for p in range(self.args.P))
-                                                                    + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g].x for j in range(self.args.J) for g in range(self.args.G)) for m in range(self.args.M+1)) for k in range(self.args.K)))
-            for k in range(self.args.K):
-                print(f"Extend sub {k} Cost:", (sum(self.idata.O_p[p]*self.aak[k,w,p].x - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p].x for w in range(self.args.W) for p in range(self.args.P)) 
-                                                        + sum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for p in range(self.args.P))
-                                                        + sum(self.idata.CU_g[g]*self.sk[k,m,j,g].x for j in range(self.args.J) for g in range(self.args.G)) for m in range(self.args.M+1))))
 
 
 
@@ -792,7 +784,7 @@ class StageProblem_extended:
             
             staging_area_expand_cost = sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W))                                   
             inventory_expand_cost =  sum(self.args.price_strategic*self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
-            replenmship_cost = (1/self.args.K)*sum(sum(self.idata.O_p[p]*self.aak[k,w,p].x - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p].x for w in range(self.args.W) for p in range(self.args.P)) for k in range(self.args.K))
+            replenmship_cost = (1/self.args.K)*sum(sum(self.args.price_strategic*self.idata.O_p[p]*self.aak[k,w,p].x - self.args.price_strategic*self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p].x for w in range(self.args.W) for p in range(self.args.P)) for k in range(self.args.K))
             Shortage_cost =  (1/self.args.K)*sum(sum(sum(self.idata.CU_g[g]*self.sk[k,m,j,g].x for j in range(self.args.J) for g in range(self.args.G)) for m in range(self.args.M+1)) for k in range(self.args.K))
             acquire_cost =  (1/self.args.K)*sum(sum( sum(self.idata.O_p[p]*self.ak[k,m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for p in range(self.args.P)) for m in range(self.args.M+1)) for k in range(self.args.K))
             holding_cost = sum(self.idata.H_p[p]*self.v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
@@ -973,34 +965,30 @@ class solve_SDDP:
 
         if(root == True):
             for stage_add_Benders_cut in range(self.args.T-1):
-                for state_add_Benders_cut in range(self.args.N):
-                    self.stage[stage_add_Benders_cut][state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+                self.stage[stage_add_Benders_cut][state].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+            self.stage_leaf[state].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
-            for state_add_Benders_cut in range(self.args.N):
-                self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
-
-        elif(leaf == True):
+        # elif(leaf == True):
             # self.stage_root.add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
             # for stage_add_Benders_cut in range(self.args.T-1):
             #     for state_add_Benders_cut in range(self.args.N):
             #         self.stage[stage_add_Benders_cut][state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
-            for state_add_Benders_cut in range(self.args.N):
-                if(state != state_add_Benders_cut):
-                    self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+            # for stage_add_Benders_cut in range(stage,self.args.T-1):
+            #     self.stage[stage_add_Benders_cut][state].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+            # if(state == self.args.initial_state):
+            #     self.stage_root.add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
         
         else:
             # self.stage_root.add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+            for stage_add_Benders_cut in range(stage+1,self.args.T-1):
+                self.stage[stage_add_Benders_cut][state].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
-            for stage_add_Benders_cut in range(self.args.T-1):
-                for state_add_Benders_cut in range(self.args.N):
-                    if(state_add_Benders_cut != state and stage_add_Benders_cut>= stage):
-                        # print("stage/state:",stage_add_Benders_cut,state_add_Benders_cut)
-                        self.stage[stage_add_Benders_cut][state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+            if(state == self.args.initial_state):
+                self.stage_root.add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
-            for state_add_Benders_cut in range(self.args.N):
-                self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+            self.stage_leaf[state].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
 
     def run(self):
@@ -1034,7 +1022,7 @@ class solve_SDDP:
                 # print("1111")
 
                 # Benders Cut Sharing
-                self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,root=True)
+                self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,root=True,state=self.args.initial_state)
 
                 # print("22222")
 
@@ -1115,7 +1103,7 @@ class solve_SDDP:
             flag, Elapsed = self.termination_check(iter, relative_gap, LB_list, start, cutviol_iter)
             if flag != 0:
                 train_time = Elapsed
-                print("total time:", Elapsed)
+                print("training total time:", Elapsed)
 
                 self.args.evaluate_switch = True
 

@@ -44,7 +44,7 @@ class Arguments:
         self._parser.add_argument('--LB_TOL', type=float, default=1e-4, help='Shortage Factor')
 
         # Method
-        self._parser.add_argument('--Strategic_node_sovling', type=int, default=0, help='0: Extend Formulation 1: Benders Decompostion')
+        self._parser.add_argument('--Strategic_node_sovling', type=int, default=1, help='0: Extend Formulation 1: Benders Decompostion')
         self._parser.add_argument('--Model', type=str, default="SDDP", help='SDDP/Extend/2SSP')
 
         # Debug

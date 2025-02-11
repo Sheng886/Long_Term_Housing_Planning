@@ -12,7 +12,7 @@ import sys
 
 
 cut_vio_thred = 1e-4
-simulate_iter = 1
+simulate_iter = 1000
 
 class subproblem:
 
@@ -32,7 +32,7 @@ class subproblem:
         self.bbk = self.sub.addVars(args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='bbktwp')
 
         
-        self.sub.setObjective(quicksum(self.idata.O_p[p]*self.aak[w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p] for w in range(args.W) for p in range(args.P)) 
+        self.sub.setObjective(quicksum(args.price_strategic*self.idata.O_p[p]*self.aak[w,p] - args.price_strategic*self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p] for w in range(args.W) for p in range(args.P)) 
                               + quicksum(quicksum(self.idata.O_p[p]*self.ak[m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                        + quicksum(self.idata.CU_g[g]*self.sk[m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)), GRB.MINIMIZE);
 
@@ -83,7 +83,7 @@ class subproblem:
         for m in range(0,args.M+1,args.R):
             for w in range(args.W):
                 for p in range(args.P):
-                    self.RSS_cons[temp_m][w][p] = self.sub.addConstr(quicksum(self.ak[m,i,w,p] for i in range(args.I)) + self.vk[m,w,p] == 0)
+                    self.RSS_cons[temp_m][w][p] = self.sub.addConstr(quicksum(self.ak[m,i,w,p] for i in range(args.I)) + self.vk[m,w,p] <= 0)
             temp_m = temp_m + 1
 
         
@@ -233,7 +233,7 @@ class subproblem:
         acquire_cost = 0
 
         if(self.args.evaluate_switch == True):
-            replenmship_cost = sum(self.idata.O_p[p]*self.aak[w,p].x - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p].x for w in range(self.args.W) for p in range(self.args.P))
+            replenmship_cost = sum(self.args.price_strategic*self.idata.O_p[p]*self.aak[w,p].x - self.args.price_strategic*self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p].x for w in range(self.args.W) for p in range(self.args.P))
             Shortage_cost =  sum(sum(self.idata.CU_g[g]*self.sk[m,j,g].x for j in range(self.args.J) for g in range(self.args.G)) for m in range(self.args.M+1))
             acquire_cost =  sum( sum(self.idata.O_p[p]*self.ak[m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for p in range(self.args.P)) for m in range(self.args.M+1))
 
@@ -634,7 +634,7 @@ class StageProblem_extended:
         if(last_stage == False):
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
                                   + quicksum(args.price_strategic*self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
-                                  + (1/args.K)*quicksum(quicksum(self.idata.O_p[p]*self.aak[k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
+                                  + (1/args.K)*quicksum(quicksum(args.price_strategic*self.idata.O_p[p]*self.aak[k,w,p] - args.price_strategic*self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
                                                       + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                                                 + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)) for k in range(args.K))
                                   + quicksum(self.idata.MC_tran_matrix[self.stage][state][n]*self.theta[n] for n in range(args.N)) 
@@ -642,7 +642,7 @@ class StageProblem_extended:
         else:
             self.model.setObjective(quicksum(self.idata.E_w[w]*self.y[w] for w in range(args.W)) 
                                   + quicksum(args.price_strategic*self.idata.O_p[p]*(self.x[w,p] - self.idata.R_p[p]*self.z[w,p]) + self.idata.H_p[p]*self.v[w,p] for w in range(args.W) for p in range(args.P))
-                                  + (1/args.K)*quicksum(quicksum(self.idata.O_p[p]*self.aak[k,w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
+                                  + (1/args.K)*quicksum(quicksum(args.price_strategic*self.idata.O_p[p]*self.aak[k,w,p] - args.price_strategic*self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p] for w in range(args.W) for p in range(args.P)) 
                                                       + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                                                 + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)) for k in range(args.K))
                                 , GRB.MINIMIZE);
@@ -731,7 +731,7 @@ class StageProblem_extended:
             for m in range(0,args.M+1,args.R):
                 for w in range(args.W):
                     for p in range(args.P):
-                        self.model.addConstr(quicksum(self.ak[k,m,i,w,p] for i in range(args.I)) + self.vk[k,m,w,p] == self.v[w,p])
+                        self.model.addConstr(quicksum(self.ak[k,m,i,w,p] for i in range(args.I)) + self.vk[k,m,w,p] <= self.v[w,p])
 
         # pdb.set_trace()
         # Delviery Flow
@@ -805,17 +805,7 @@ class StageProblem_extended:
                 self.x_value[w][p] = self.x[w,p].x
                 self.z_value[w][p] = self.z[w,p].x
 
-        if(self.args.Cost_print == True):
-            print("Extend Strategic Node Cost:", self.model.ObjVal)
-            print("Extend Second-stage Cost:", (1/self.args.K)*sum(quicksum(self.idata.O_p[p]*self.aak[k,w,p].x - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p].x for w in range(self.args.W) for p in range(self.args.P)) 
-                                                          + quicksum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for p in range(self.args.P))
-                                                                    + quicksum(self.idata.CU_g[g]*self.sk[k,m,j,g].x for j in range(self.args.J) for g in range(self.args.G)) for m in range(self.args.M+1)) for k in range(self.args.K)))
-            for k in range(self.args.K):
-                print(f"Extend sub {k} Cost:", (sum(self.idata.O_p[p]*self.aak[k,w,p].x - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p].x for w in range(self.args.W) for p in range(self.args.P)) 
-                                                        + sum( quicksum(self.idata.O_p[p]*self.ak[k,m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for p in range(self.args.P))
-                                                        + sum(self.idata.CU_g[g]*self.sk[k,m,j,g].x for j in range(self.args.J) for g in range(self.args.G)) for m in range(self.args.M+1))))
-
-
+    
 
         staging_area_expand_cost = 0
         inventory_expand_cost = 0
@@ -832,7 +822,7 @@ class StageProblem_extended:
             
             staging_area_expand_cost = sum(self.idata.E_w[w]*self.y[w].x for w in range(self.args.W))                                   
             inventory_expand_cost =  sum(self.args.price_strategic*self.idata.O_p[p]*(self.x[w,p].x - self.idata.R_p[p]*self.z[w,p].x) for w in range(self.args.W) for p in range(self.args.P))
-            replenmship_cost = (1/self.args.K)*sum(sum(self.idata.O_p[p]*self.aak[k,w,p].x - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p].x for w in range(self.args.W) for p in range(self.args.P)) for k in range(self.args.K))
+            replenmship_cost = (1/self.args.K)*sum(sum(self.args.price_strategic*self.idata.O_p[p]*self.aak[k,w,p].x - self.args.price_strategic*self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[k,w,p].x for w in range(self.args.W) for p in range(self.args.P)) for k in range(self.args.K))
             Shortage_cost =  (1/self.args.K)*sum(sum(sum(self.idata.CU_g[g]*self.sk[k,m,j,g].x for j in range(self.args.J) for g in range(self.args.G)) for m in range(self.args.M+1)) for k in range(self.args.K))
             acquire_cost =  (1/self.args.K)*sum(sum( sum(self.idata.O_p[p]*self.ak[k,m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for p in range(self.args.P)) for m in range(self.args.M+1)) for k in range(self.args.K))
             holding_cost = sum(self.idata.H_p[p]*self.v[w,p].x for w in range(self.args.W) for p in range(self.args.P))
@@ -840,29 +830,6 @@ class StageProblem_extended:
                 obj = self.model.ObjVal - sum(self.idata.MC_tran_matrix[self.stage][self.state][n]*self.theta[n].x for n in range(self.args.N))
                 # print(sum(self.idata.MC_tran_matrix[self.stage][self.state][n]*self.theta[n].x for n in range(self.args.N)))
 
-            if self.stage0 == True:
-                for k in range(self.args.K):
-                    for m in range(0, self.args.M+1):
-                        a = sum(self.ak[k,m,i,w,p].x for i in range(self.args.I) for w in range(self.args.W) for w in range(self.args.P))
-                        v = sum(self.vk[k,m,w,p].x for w in range(self.args.W) for w in range(self.args.P))
-                        f = sum(self.fk[k,m,w,j,p,g].x for j in range(self.args.J) for w in range(self.args.W) for p in range(self.args.P) for g in range(self.args.G))
-                        d = sum(self.idata.demand[self.state][k][m][j][g] for j in range(self.args.J) for g in range(self.args.G))
-                        s = sum(self.sk[k,m,j,g].x for j in range(self.args.J) for g in range(self.args.G))
-                        print(k,m,"v","a","d","s","f",v,a,d,s,f)
-
-                for k in range(self.args.K):
-                    for m in range(1,self.args.M+1):
-                        for j in range(self.args.J):
-                            for g in range(self.args.G):
-                                d = self.idata.demand[self.state][k][m][j][g]
-                                f = sum(self.fk[k,m,w,j,p,g].x for w in range(self.args.W) for p in range(self.args.P))
-                                s = self.sk[k,m,j,g].x
-                                if(d != f+s):
-                                    print("error")
-                            
-                         
-
-                print(obj)
 
 
 
