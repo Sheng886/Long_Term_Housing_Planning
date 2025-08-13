@@ -10,6 +10,9 @@ import pdb
 import sys
 # import matplotlib.pyplot as plt
 
+sub_problem_time = 0
+operation_Benders_problem_time = 0
+strategic_problem_time = 0
 
 cut_vio_thred = 1e-4
 
@@ -331,12 +334,19 @@ class StageProblem_Decomposition:
         UB = GRB.INFINITY
         eps = 1e-3
 
-
+        global operation_Benders_problem_time
+        if(self.args.evaluate_switch != True):
+          operation_Benders_problem_time -= time.time()
         while(True):
             
+            if(self.args.evaluate_switch != True):
+              global strategic_problem_time
+              strategic_problem_time -= time.time()
             self.model.update()
             self.model.setParam("OutputFlag", 0)
             self.model.optimize()
+            if(self.args.evaluate_switch != True):
+              strategic_problem_time += time.time()
             
             for w in range(self.args.W):
               self.u_value[w] = self.u[w].x
@@ -358,14 +368,19 @@ class StageProblem_Decomposition:
             sub_opt = np.zeros((self.args.K))
 
             sub_opt_total = 0
-
+            if(self.args.evaluate_switch != True):
+              global sub_problem_time
+              sub_problem_time -= time.time()
+              
             for k in range(self.args.K):
                 if(self.stage0 == False):
                     pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k],temp1,temp2,temp3 = self.sub.run(self.u,self.v,self.idata.demand[self.state][k])
                 else:
                     pi_8b[k],pi_8e[k],pi_8g[k],pi_8h[k],pi_8i[k],sub_opt[k],temp1,temp2,temp3 = self.sub.run(self.u,self.v,self.idata.demand[self.args.initial_state][k])
                 sub_opt_total = sub_opt_total + sub_opt
-
+            
+            if(self.args.evaluate_switch != True):
+              sub_problem_time += time.time()
             sub_opt_total = (1/self.args.K)*sum(sub_opt[k] for k in range(self.args.K))
 
             # ---------------------------------------- UB,LB Check  -----------------------------------------
@@ -430,7 +445,8 @@ class StageProblem_Decomposition:
                         print(f"Benders sub {k} Cost",sub_opt[k])
                 break
 
-
+        if(self.args.evaluate_switch != True):
+          operation_Benders_problem_time += time.time()
         staging_area_expand_cost_temp = 0
         inventory_expand_cost_temp = 0
         holding_cost_temp = 0
@@ -730,6 +746,7 @@ class StageProblem_extended:
     def forward_run(self,u=None,v=None):
 
         # Input first-stage solution
+        
 
         self.u_pre = u
         self.v_pre = v
@@ -752,10 +769,15 @@ class StageProblem_extended:
 
         self.cut_rhs_temp = []
         self.cut_temp = []
-
+        
+        if(self.args.evaluate_switch != True):
+          global strategic_problem_time
+          strategic_problem_time -= time.time()
         self.model.update()
         self.model.setParam("OutputFlag", 0)
         self.model.optimize()
+        if(self.args.evaluate_switch != True):
+          strategic_problem_time += time.time()
         
         for w in range(self.args.W):
             self.u_value[w] = self.u[w].x
@@ -893,7 +915,6 @@ class StageProblem_extended:
 
         return temp_cut_itr
 
-
 class solve_SDDP:
     def __init__(self, args, input_data):
 
@@ -964,34 +985,30 @@ class solve_SDDP:
 
         if(root == True):
             for stage_add_Benders_cut in range(self.args.T-1):
-                for state_add_Benders_cut in range(self.args.N):
-                    self.stage[stage_add_Benders_cut][state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+                self.stage[stage_add_Benders_cut][state].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+            self.stage_leaf[state].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
-            for state_add_Benders_cut in range(self.args.N):
-                self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
-
-        elif(leaf == True):
+        # elif(leaf == True):
             # self.stage_root.add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
             # for stage_add_Benders_cut in range(self.args.T-1):
             #     for state_add_Benders_cut in range(self.args.N):
             #         self.stage[stage_add_Benders_cut][state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
-            for state_add_Benders_cut in range(self.args.N):
-                if(state != state_add_Benders_cut):
-                    self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+            # for stage_add_Benders_cut in range(stage,self.args.T-1):
+            #     self.stage[stage_add_Benders_cut][state].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+            # if(state == self.args.initial_state):
+            #     self.stage_root.add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
         
-        else:
+        elif(leaf != True):
             # self.stage_root.add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+            for stage_add_Benders_cut in range(stage+1,self.args.T-1):
+                self.stage[stage_add_Benders_cut][state].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
-            for stage_add_Benders_cut in range(self.args.T-1):
-                for state_add_Benders_cut in range(self.args.N):
-                    if(state_add_Benders_cut != state and stage_add_Benders_cut>= stage):
-                        # print("stage/state:",stage_add_Benders_cut,state_add_Benders_cut)
-                        self.stage[stage_add_Benders_cut][state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+            if(state == self.args.initial_state):
+                self.stage_root.add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
-            for state_add_Benders_cut in range(self.args.N):
-                self.stage_leaf[state_add_Benders_cut].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
+            self.stage_leaf[state].add_Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i)
 
 
     def run(self):
@@ -1025,7 +1042,7 @@ class solve_SDDP:
                 # print("1111")
 
                 # Benders Cut Sharing
-                self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,root=True)
+                self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,root=True,state=self.args.initial_state)
 
                 # print("22222")
 
@@ -1265,6 +1282,9 @@ class solve_SDDP:
                 print("UB mean_so:", np.mean(solution_total))
                 print("UB std_sol:", np.std(solution_total))
                 print("gap:", (np.mean(solution_total) - LB_temp)/np.mean(solution_total))
+                print("sub_problem_time:",sub_problem_time)
+                print("operation_Benders_problem_time:",operation_Benders_problem_time)
+                print("strategic_problem_time:",strategic_problem_time)
                 # plt.boxplot(solution_total)
                 # plt.savefig(f'{filename}.png')
                 # plt.close()
