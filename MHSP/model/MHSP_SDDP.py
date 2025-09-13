@@ -1046,7 +1046,7 @@ class solve_SDDP:
 
                 # print("22222")
 
-            LB_temp = obj_ex + LB_temp
+            LB_temp = obj_ex
 
             
             for stage in range(self.args.T-1):
@@ -1061,7 +1061,6 @@ class solve_SDDP:
                     # Benders Cut Sharing
                     self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,state=sample_path[stage],stage=stage)
 
-                # LB_temp = obj_ex + LB_temp
             
             if(self.args.Strategic_node_sovling == 0):
                 u,v,obj_ex,temp1,temp2,temp3,temp4,temp5,temp6 = self.stage_leaf[sample_path[self.args.T-1]].forward_run(u,v)
@@ -1071,7 +1070,6 @@ class solve_SDDP:
                 # Benders Cut Sharing
                 self.Benders_cut_shraing(pi_8b, pi_8e, pi_8g, pi_8h, pi_8i,leaf=True,state=sample_path[self.args.T-1])
 
-            # LB_temp = obj_ex + LB_temp
 
             # ----------------------------------- Backward -----------------------------------
             if(self.args.Strategic_node_sovling == 0):
