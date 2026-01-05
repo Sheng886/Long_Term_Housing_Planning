@@ -40,7 +40,9 @@ class op_node:
 
         # Scen_Path variable
         self.vk = self.sub.addVars(args.M+1, args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='vktwp')
+        
         self.v = self.sub.addVars(args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='vwp')
+
         self.bk = self.sub.addVars(args.M+1, args.I, lb=0.0, vtype=GRB.CONTINUOUS, name='bkti')
         self.ak = self.sub.addVars(args.M+1, args.I, args.W, args.P, lb=0.0, vtype=GRB.CONTINUOUS, name='aktiwp')
         self.fk = self.sub.addVars(args.M+1, args.W, args.J, args.P, args.G, lb=0.0, vtype=GRB.CONTINUOUS, name='fktwjpg')
@@ -59,10 +61,10 @@ class op_node:
                                   , GRB.MINIMIZE);
 
 
-        # # return
-        # for w in range(args.W):
-        #     for p in range(args.P):
-        #         self.sub.addConstr(self.vk[args.M,w,p] == self.v[w,p])
+        # return
+        for w in range(args.W):
+            for p in range(args.P):
+                self.sub.addConstr(self.vk[args.M,w,p] == self.v[w,p])
 
 
 
@@ -242,9 +244,9 @@ class op_node:
 
             if(self.phi.x < obj - cut_vio_thred and abs(self.phi.x - obj)/max(abs(self.phi.x),1e-10) > cut_vio_thred):
 
-                temp_constraint = self.sub.addConstr(self.phi >= quicksum(self.idata.MC_tran_matrix[self.stage][self.state][n]*(quicksum(pi_b[n][w]*self.u[w] for w in range(self.args.W)) 
+                temp_constraint = self.sub.addConstr(self.phi >= quicksum(self.idata.MC_tran_matrix[self.stage][self.state][n]*(quicksum(pi_b[n][w]*self.u_pre[w] for w in range(self.args.W)) 
                                                                     + quicksum(pi_c[n][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
-                                                                    + Benders_cut_pi[n]) for n in range(args.N)))
+                                                                    + Benders_cut_pi[n]) for n in range(self.args.N)))
 
                 temp_rhs = Benders_cut_pi
         
@@ -260,7 +262,7 @@ class op_node:
             # cut sharing
             temp_constraint = self.sub.addConstr(self.phi >= quicksum(self.idata.MC_tran_matrix[self.stage][self.state][n]*(quicksum(pi_b[n][w]*self.u[w] for w in range(self.args.W)) 
                                                                     + quicksum(pi_c[n][w][p]*self.v[w,p] for w in range(self.args.W) for p in range(self.args.P))
-                                                                    + Benders_cut_pi[n]) for n in range(args.N)))
+                                                                    + Benders_cut_pi[n]) for n in range(self.args.N)))
 
             temp_rhs = Benders_cut_pi
         
@@ -398,11 +400,13 @@ class st_node:
                 pi_b[w] = self.b_staging_cap[w].pi
                 temp = temp + self.b_staging_cap[w].pi*self.u_pre[w].x
 
+
             # Invenory Level
             for w in range(self.args.W):
                 for p in range(self.args.P):
                     pi_c[w][p] = self.c_inv_level[w][p].pi
                     temp = temp + self.c_inv_level[w][p].pi*self.v_pre[w,p].x
+
 
         Benders_cut_pi = 0
 
@@ -413,8 +417,8 @@ class st_node:
             for c in range(len(self.cut_rhs)):
                 temp = temp + self.cut[c].pi*self.cut_rhs[c]
                 Benders_cut_pi = Benders_cut_pi + self.cut[c].pi*self.cut_rhs[c]
-                
 
+                
 
         if(abs(temp-self.model.ObjVal) >= 1e-3):
             print("iteration:",iter,"stage:",self.stage,"problematic dual solution!")
@@ -442,7 +446,8 @@ class st_node:
 
                 temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
                 temp_rhs = temp_rhs + (1/self.args.K)*sum(self.idata.B_i[i]*pi_8e[k][m][i] for m in range(self.args.M+1) for i in range(self.args.I) for k in range(self.args.K))
-                temp_rhs = temp_rhs + (1/self.args.K)*Benders_cut_pi
+                temp_rhs = temp_rhs + (1/self.args.K)*sum(Benders_cut_pi[k] for k in range(self.args.K))
+
 
                 self.cut_temp.append(temp_constraint)
                 self.cut_rhs_temp.append(temp_rhs)
@@ -463,7 +468,7 @@ class st_node:
 
             temp_rhs = (1/self.args.K)*sum(pi_8h[k][m][j][g]*self.idata.demand[self.state][k][m][j][g] for m in range(1,self.args.M+1) for j in range(self.args.J) for g in range(self.args.G) for k in range(self.args.K))
             temp_rhs = temp_rhs + (1/self.args.K)*sum(self.idata.B_i[i]*pi_8e[k][m][i] for m in range(self.args.M+1) for i in range(self.args.I) for k in range(self.args.K))
-            temp_rhs = temp_rhs + (1/self.args.K)*Benders_cut_pi
+            temp_rhs = temp_rhs + (1/self.args.K)*(1/self.args.K)*sum(Benders_cut_pi[k] for k in range(self.args.K))
 
             self.cut_temp.append(temp_constraint)
             self.cut_rhs_temp.append(temp_rhs)
@@ -645,7 +650,7 @@ class solve_SDDP:
             if(iter%20 == 0):
                 print("iteration:", iter, "LB:", LB_temp)
 
-            pdb.set_trace()
+            # pdb.set_trace()
 
             
             # ----------------------------------- Stop Criteria -----------------------------------

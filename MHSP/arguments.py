@@ -45,7 +45,7 @@ class Arguments:
 
         # Method
         self._parser.add_argument('--Strategic_node_sovling', type=int, default=1, help='0: Extend Formulation 1: Benders Decompostion')
-        self._parser.add_argument('--Model', type=str, default="SDDP", help='SDDP/Extend/2SSP')
+        self._parser.add_argument('--Model', type=str, default="MSP", help='SDDP/Extend/2SSP')
 
         # Debug
         self._parser.add_argument('--Cost_print', type=bool, default=False, help='0: Extend Formulation 1: Benders Decompostion')
