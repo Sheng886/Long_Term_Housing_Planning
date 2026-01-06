@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import gurobipy as gp
 from gurobipy import GRB
-from model import MHSP_extend, MHSP_Benders, inpu_data, scenariotree, MHSP_SDDP, MHSP_RS_SDDP,MHSP_SDDP_Benders,MSP
+from model import MHSP_extend, MHSP_Benders, inpu_data, scenariotree, MHSP_SDDP, MHSP_RS_SDDP
 from model import scenariotree
 import time
 
@@ -31,18 +31,11 @@ if __name__ == '__main__':
         print("Model set up time:", end_time_setup-start_time_setup)
         MHSP_Benders.run(args)
     elif(args.Model == "SDDP"):
-
         start_time_setup = time.time()
-        if(args.Strategic_node_sovling == 1):
-            MHSP_SDDP = MHSP_SDDP_Benders.solve_SDDP(args, input_data)
-            end_time_setup = time.time()
-            print("Model set up time:", end_time_setup-start_time_setup)
-            MHSP_SDDP.run()
-        else:
-            MHSP_SDDP = MHSP_SDDP.solve_SDDP(args, input_data)
-            end_time_setup = time.time()
-            print("Model set up time:", end_time_setup-start_time_setup)
-            MHSP_SDDP.run()
+        MHSP_SDDP = MHSP_SDDP.solve_SDDP(args, input_data)
+        end_time_setup = time.time()
+        MHSP_SDDP.run()
+        print("Model set up time:", end_time_setup-start_time_setup)
     elif(args.Model == "MHSP_RS_SDDP"):
         print("Review Interval:",args.R)
         start_time_setup = time.time()
@@ -50,13 +43,6 @@ if __name__ == '__main__':
         end_time_setup = time.time()
         print("Model set up time:", end_time_setup-start_time_setup)
         MHSP_RS_SDDP.run()
-
-    elif(args.Model == "MSP"):
-        start_time_setup = time.time()
-        MSP = MSP.solve_SDDP(args, input_data)
-        end_time_setup = time.time()
-        print("Model set up time:", end_time_setup-start_time_setup)
-        MSP.run()
     end_time = time.time()
     time_taken = end_time - start_time
     print(f"Time taken: {time_taken:.4f} seconds")

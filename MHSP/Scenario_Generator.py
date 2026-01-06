@@ -281,12 +281,7 @@ def main_generator(args):
     demand = np.zeros((args.N,args.K,args.M+1,args.J,args.G))
 
     for n_index,n in enumerate(states):
-
-
         for k in range(args.K):
-
-            if k%20 == 0:
-                print("State, Scens:", n_index,k)
 
             # Sample # of hurricane
             # Atlantic
@@ -308,7 +303,7 @@ def main_generator(args):
             A_month_freq = distribute_hurricane_month(freq_sample_path_A, Atlantic_month_dis)
             G_month_freq = distribute_hurricane_month(freq_sample_path_G, Gulf_month_dis)
 
-            # print(n_index,n,freq_sample_path_A,freq_sample_path_G)
+            print(n_index,n,freq_sample_path_A,freq_sample_path_G)
 
 
             for m in range(args.M+1):
@@ -421,9 +416,9 @@ def main_generator(args):
                 demand2.append(sum(demand[n2][k][m][j][g] for j in range(args.J) for m in range(args.M+1) for g in range(args.G)))
             # print(n1,n2, demand1, demand2)
             statistic, p_value = stats.ks_2samp(demand1, demand2)
-            # print(n1,n2)
-            # print(f"KS Statistic: {statistic}")
-            # print(f"P-value: {p_value}")
+            print(n1,n2)
+            print(f"KS Statistic: {statistic}")
+            print(f"P-value: {p_value}")
 
     # pdb.set_trace()
 

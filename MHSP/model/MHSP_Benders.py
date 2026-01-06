@@ -33,7 +33,7 @@ class subporblem():
 
 
         # Objective
-        self.sub.setObjective(quicksum(self.idata.O_p[p]*self.aak[w,p] - self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p] for w in range(args.W) for p in range(args.P)) 
+        self.sub.setObjective(quicksum(args.price_strategic*self.idata.O_p[p]*self.aak[w,p] - args.price_strategic*self.idata.R_p[p]*self.idata.O_p[p]*self.bbk[w,p] for w in range(args.W) for p in range(args.P)) 
                               + quicksum(quicksum(self.idata.O_p[p]*self.ak[m,i,w,p] for i in range(args.I) for w in range(args.W) for p in range(args.P))
                                        + quicksum(self.idata.CU_g[g]*self.sk[m,j,g] for j in range(args.J) for g in range(args.G)) for m in range(args.M+1)), GRB.MINIMIZE);
 

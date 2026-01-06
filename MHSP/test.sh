@@ -1,6 +1,0 @@
-#!/bin/bash
-
-# python main.py --Model=Extend --Strategic_node_sovling=0 --demand_path=demand_data/Demand_Stage_3_States_9_Study_59_month_6_K_1.npy --demand_root_path=demand_data/Root_Demand_Stage_3_States_9_Study_59_month_6_K_1.npy --MC_trans_path=demand_data/MC_trans_Stage_3_States_9_Study_59_month_6_K_1.npy --P_p_factor=100
-# python main.py --Model=Extend --Strategic_node_sovling=0 --demand_path=demand_data/Demand_Stage_3_States_9_Study_59_month_6_K_1.npy --demand_root_path=demand_data/Root_Demand_Stage_3_States_9_Study_59_month_6_K_1.npy --MC_trans_path=demand_data/MC_trans_Stage_3_States_9_Study_59_month_6_K_1.npy --P_p_factor=1
-python main.py --Model=SDDP --Strategic_node_sovling=0 --Policy=avg --demand_path=demand_data/Demand_Stage_3_States_9_Study_59_month_6_K_1.npy --demand_root_path=demand_data/Root_Demand_Stage_3_States_9_Study_59_month_6_K_1.npy --MC_trans_path=demand_data/MC_trans_Stage_3_States_9_Study_59_month_6_K_1.npy --P_p_factor=1
-# python main.py --Model=SDDP --Strategic_node_sovling=0 --demand_path=demand_data/Demand_Stage_3_States_9_Study_59_month_6_K_5.npy --demand_root_path=demand_data/Root_Demand_Stage_3_States_9_Study_59_month_6_K_5.npy --MC_trans_path=demand_data/MC_trans_Stage_3_States_9_Study_59_month_6_K_5.npy --P_p_factor=100

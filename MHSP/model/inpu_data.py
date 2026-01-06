@@ -14,7 +14,7 @@ import sys
 class input_data_class:
     def __init__(self, args):
 
-        ## ------------------ Demand --------------- ###
+        ### ------------------ Demand --------------- ###
 
         # Read the CSV file
         start_time = time.time()
@@ -45,7 +45,6 @@ class input_data_class:
         args.M = int(info[9])
         args.K = int(info[11])
 
-
         ### ------------------ MC Matrix --------------- ###
 
         start_time = time.time()
@@ -65,9 +64,6 @@ class input_data_class:
             for state in range(args.N):
                 self.MC_tran_matrix[stage][state] = self.MC_tran_matrix[stage][state]/sum(self.MC_tran_matrix[stage][state])
 
-        # print(self.MC_tran_matrix)
-        # pdb.set_trace()
-
         end_time = time.time()
         time_taken = end_time - start_time
         print("MC trans matrix loaded.",time_taken,"secs.")
@@ -76,26 +72,6 @@ class input_data_class:
         for t in range(args.T):
             temp += args.N**(t+1)
         args.TN = temp
-
-
-        # matrix_list = np.zeros((args.T,args.N))
-
-        # for stage in range(args.T):
-        #     for state in range(args.N):
-
-        #         if stage == 0:
-        #             matrix_list[stage][state] = self.MC_tran_matrix[stage][args.initial_state][state]
-        #         else:
-        #             for state_pre in range(args.N):
-        #                 matrix_list[stage][state] += self.MC_tran_matrix[stage][state_pre][state]*matrix_list[stage-1][state_pre]
-
-        # list_1d = matrix_list.flatten().tolist()
-
-        # df = pd.DataFrame({'Values': list_1d})
-
-        # # Save the DataFrame to an Excel file
-        # output_file = 'output.xlsx'
-        # df.to_excel(output_file, index=False, sheet_name='Sheet1')
 
         # pdb.set_trace()
 
@@ -182,14 +158,5 @@ class input_data_class:
         print("# of Stage:", args.T, "# of state:", args.N)
         if(args.Model == "SDDP" or "RS_SDDP"):
             print("Sample Method of SDDP", args.sample_path)
-
-        # for m in range(args.M+1):
-        #     if(m%int(args.R) != 0):
-        #         print("X",m)
-
-        # for m in range(0,args.M+1,args.R):
-        #     print("O",m)
-
-
 
         # pdb.set_trace()
